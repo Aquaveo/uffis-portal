@@ -153,6 +153,8 @@ data "aws_iam_policy_document" "deploy_state" {
       "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}.tfstate.tflock",
       "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}-iam.tfstate",
       "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}-iam.tfstate.tflock",
+      "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}-rds.tfstate",
+      "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}-rds.tfstate.tflock",
     ]
   }
 }

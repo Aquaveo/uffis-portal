@@ -27,10 +27,10 @@ jobs:
           tofu_version: "1.12.3"
 
       - name: Tofu fmt
-        run: tofu fmt -check -recursive tofu-iam/
+        run: tofu fmt -check -recursive tofu-iam/ tofu-rds/
 
       - name: Placeholders resolved
         run: |
-          if grep -rn REPLACE_ tofu/ tofu-iam/ ; then
+          if grep -rn REPLACE_ tofu/ tofu-iam/ tofu-rds/ ; then
             echo "::warning::unresolved REPLACE_ placeholders remain; the deploy workflow will refuse to apply"
           fi

@@ -23,6 +23,7 @@ conf/register_tenants.py          creates the public tenant and its domain rows
 conf/portal_storage.py            S3 static storage backend
 tofu/uffis.tfvars                 infrastructure inputs for the tethys-ecs-iac module
 tofu/backend.hcl                  tofu state location, key portals/uffis-portal.tfstate
+tofu-rds/                         the Postgres instance, applied once with admin credentials
 tofu-iam/                         OIDC CI roles, applied once with admin credentials
 .github/workflows/                build (image to ECR), tofu deploy, sync secrets to SSM
 ```
@@ -94,40 +95,33 @@ even when the CLI itself works.
 
 ### 2. RDS
 
+`tofu-rds/` is a separate root module with its own state key, so a `tofu destroy` of the portal
+cannot reach the database. The instance also carries `deletion_protection = true` and takes a final
+snapshot, so destroying it takes two deliberate steps.
+
 ```bash
-aws rds create-db-subnet-group \
-  --db-subnet-group-name uffis-portal-db-subnets \
-  --db-subnet-group-description "uffis portal db" \
-  --subnet-ids <subnet-a> <subnet-b>
-
-SG=$(aws ec2 create-security-group --group-name uffis-portal-db \
-  --description "uffis portal Postgres" --vpc-id <vpc-id> \
-  --query GroupId --output text)
-
-aws rds create-db-instance \
-  --db-instance-identifier uffis-portal-db \
-  --db-instance-class db.t4g.medium \
-  --engine postgres --engine-version 17 \
-  --allocated-storage 50 --storage-type gp3 --storage-encrypted \
-  --master-username tethys_default \
-  --master-user-password '<strong-password>' \
-  --db-name tethys_platform \
-  --db-subnet-group-name uffis-portal-db-subnets \
-  --vpc-security-group-ids "$SG" \
-  --backup-retention-period 7 --no-publicly-accessible
-
-aws rds wait db-instance-available --db-instance-identifier uffis-portal-db
-aws rds describe-db-instances --db-instance-identifier uffis-portal-db \
-  --query 'DBInstances[0].Endpoint.Address' --output text
+cd tofu-rds
+tofu init -backend-config=backend.hcl
+export TF_VAR_master_password='<strong-password>'
+tofu apply -var vpc_id=<vpc-id> -var 'subnet_ids=["<subnet-a>","<subnet-b>"]'
+tofu output db_host
 ```
 
-`--db-name tethys_platform` creates the application database at provision time. Do not plan on a
-separate `psql` step: the instance is not publicly accessible and its only ingress will be the
-Fargate security group, so there is no path to it from a workstation.
+Put `db_host` in `tofu/uffis.tfvars`, and set the same password as the `DB_PASSWORD` GitHub secret in
+step 5 so the running task and the instance agree.
 
-The ingress rule is added later, in step 6, because the web security group does not exist until the
-first apply. Do not open the database to a VPC CIDR to get moving. The master credential is also the
-application credential.
+`db_name` is created with the instance, so there is no separate `psql` step. That matters because the
+instance is not publicly accessible and its only ingress will be the Fargate security group, so there
+is no network path to it from a workstation.
+
+**The database stays closed until step 6.** Its ingress source is the portal's web security group,
+which does not exist until the first portal apply. Do not open it to a VPC CIDR to get moving; the
+master credential is also the application credential.
+
+The master password is stored in this module's state. The state bucket is versioned, encrypted and
+access controlled, which is the usual accepted tradeoff. If you would rather it never touch state,
+switch the instance to `manage_master_user_password = true` and have RDS generate it into Secrets
+Manager, then copy it into SSM instead of setting the GitHub secret.
 
 ### 3. Certificate
 
@@ -208,14 +202,17 @@ gh workflow run tofu-deploy.yml --repo Aquaveo/uffis-portal -f action=apply
 ```
 
 The first apply's provision task is expected to fail on the database wait, because the RDS security
-group still has no ingress. Add the rule now and apply again:
+group still has no ingress. Open it with the web security group the apply just created, then apply
+again:
 
 ```bash
 IAC=../tethys-ecs-iac/tofu
 tofu -chdir=$IAC init -reconfigure -backend-config="$PWD/tofu/backend.hcl"
 WEB_SG=$(tofu -chdir=$IAC output -raw web_security_group)
-aws ec2 authorize-security-group-ingress --group-id "$SG" \
-  --protocol tcp --port 5432 --source-group "$WEB_SG"
+
+tofu -chdir=tofu-rds apply -var vpc_id=<vpc-id> \
+  -var 'subnet_ids=["<subnet-a>","<subnet-b>"]' \
+  -var web_security_group_id="$WEB_SG"
 
 gh workflow run tofu-deploy.yml --repo Aquaveo/uffis-portal -f action=apply
 ```
