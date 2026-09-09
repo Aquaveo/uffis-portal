@@ -1,0 +1,92 @@
+name: tofu deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "plan (preview) or apply (make changes)"
+        required: true
+        default: plan
+        type: choice
+        options: [plan, apply]
+      iac_ref:
+        description: "Aquaveo/tethys-ecs-iac ref (branch/tag to pin)"
+        required: false
+        default: main
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  tofu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo (tfvars + backend)
+        uses: actions/checkout@v4
+
+      - name: Checkout the general IaC module
+        uses: actions/checkout@v4
+        with:
+          repository: Aquaveo/tethys-ecs-iac
+          ref: ${{ inputs.iac_ref }}
+          path: iac
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.12.3"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: tofu init
+        working-directory: iac/tofu
+        run: tofu init -input=false -backend-config="${GITHUB_WORKSPACE}/tofu/backend.hcl"
+
+      - name: tofu plan
+        working-directory: iac/tofu
+        run: tofu plan -input=false -var-file="${GITHUB_WORKSPACE}/tofu/uffis.tfvars" -out=tfplan
+
+      - name: tofu apply
+        if: ${{ inputs.action == 'apply' }}
+        working-directory: iac/tofu
+        run: tofu apply -input=false tfplan
+
+      - name: Provision + roll service
+        if: ${{ inputs.action == 'apply' }}
+        working-directory: iac/tofu
+        run: |
+          set -euo pipefail
+          CLUSTER=$(tofu output -raw ecs_cluster)
+          SERVICE=$(tofu output -raw service_name)
+          PROVISION_TD=$(tofu output -raw provision_task_definition)
+          WEB_TD=$(tofu output -raw web_task_definition)
+          CNAME=$(tofu output -raw provision_container_name)
+          SG=$(tofu output -raw web_security_group)
+          SUBNETS=$(tofu output -json service_subnets | jq -r 'join(",")')
+          [ "$(tofu output -raw assign_public_ip)" = "true" ] && PUBIP=ENABLED || PUBIP=DISABLED
+          NETCFG="awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SG],assignPublicIp=$PUBIP}"
+
+          echo "== run one-shot provision task =="
+          TASK=$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$PROVISION_TD" \
+            --launch-type FARGATE --network-configuration "$NETCFG" \
+            --started-by "ci-provision" --query 'tasks[0].taskArn' --output text)
+          echo "provision task: $TASK"
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
+          CODE=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" \
+            --query "tasks[0].containers[?name=='${CNAME}'].exitCode | [0]" --output text)
+          echo "provision exit code: $CODE"
+          if [ "$CODE" != "0" ]; then
+            echo "::error::provision task did not succeed (exit ${CODE}); service NOT rolled."
+            exit 1
+          fi
+
+          echo "== roll web service to the new task def =="
+          aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" \
+            --task-definition "$WEB_TD" --force-new-deployment >/dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
+          echo "deploy complete."

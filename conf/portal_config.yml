@@ -1,0 +1,61 @@
+version: 2.0
+name:
+apps: {}
+settings:
+  DEBUG: false
+  ALLOWED_HOSTS:
+    - localhost
+    - 127.0.0.1
+  CSRF_TRUSTED_ORIGINS:
+    - http://localhost:8000
+    - http://127.0.0.1:8000
+  SECURE_PROXY_SSL_HEADER:
+    - HTTP_X_FORWARDED_PROTO
+    - https
+  SESSION_COOKIE_SECURE: true
+  CSRF_COOKIE_SECURE: true
+  SESSION_COOKIE_NAME: __Host-sessionid
+  CSRF_COOKIE_NAME: __Host-csrftoken
+  STATIC_ROOT: /home/tethys/persist/static
+  STATIC_URL: /static/
+  MEDIA_ROOT: /home/tethys/persist/media
+  MEDIA_URL: /media/
+  TETHYS_WORKSPACES_ROOT: /home/tethys/persist/workspaces
+  DATA_UPLOAD_MAX_MEMORY_SIZE: 104857600
+  FILE_UPLOAD_MAX_MEMORY_SIZE: 104857600
+  TENANTS_CONFIG:
+    ENABLED: true
+    TENANT_APPS:
+      - "tethys_apps"
+      - "tethys_config"
+      - "tethys_services"
+      - "tethys_compute"
+      - "tethys_quotas"
+      - "guardian"
+    TENANT_LIMIT_SET_CALLS: false
+    TENANT_COLOR_ADMIN_APPS: true
+    SHOW_PUBLIC_IF_NO_TENANT_FOUND: false
+  DATABASES:
+    default:
+      ENGINE: django_tenants.postgresql_backend
+      NAME: tethys_platform
+      USER: tethys_default
+      HOST: postgres
+      PORT: 5432
+      CONN_MAX_AGE: 0
+      DISABLE_SERVER_SIDE_CURSORS: false
+  CHANNEL_LAYERS:
+    default:
+      BACKEND: channels.layers.InMemoryChannelLayer
+  TETHYS_PORTAL_CONFIG:
+    ENABLE_OPEN_PORTAL: true
+    BYPASS_TETHYS_HOME_PAGE: false
+
+site_settings:
+  GENERAL_SETTINGS:
+    site_title: UFFIS
+    apps_library_title: Tools
+    primary_color: "#19488b"
+    secondary_color: "#0f3a73"
+    primary_text_color: "#ffffff"
+    background_color: "#ffffff"

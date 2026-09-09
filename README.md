@@ -1,0 +1,312 @@
+# uffis-portal
+
+Multi tenant [Tethys Platform](https://www.tethysplatform.org/) portal for UFFIS, running on AWS ECS
+Fargate with RDS Postgres.
+
+Tenants are isolated by Postgres schema (`django-tenants`) and routed by hostname. The portal is
+served at `uhm.uffis.org` and each tenant at `<tenant>.uhm.uffis.org`, all from one Fargate service
+behind one CloudFront distribution.
+
+The image builds FROM the shared [`tethys-uvx`](https://github.com/Aquaveo/tethys-uvx) base. The
+infrastructure is the shared [`tethys-ecs-iac`](https://github.com/Aquaveo/tethys-ecs-iac) OpenTofu
+module. This repo holds only the UFFIS image, config, tenancy hooks, tfvars, and CI.
+
+## Layout
+
+```
+Dockerfile                        FROM tethys-uvx builder + runtime-base, plus the app layer
+pyproject.toml                    app layer dependencies (django-tenants, storages, boto3)
+conf/portal_config.yml            declarative portal settings, including TENANTS_CONFIG
+conf/portal-config.d/             config hooks, run by the base portal-config.sh at container start
+conf/init.d/                      provisioning hooks, run by the base provision.sh once per release
+conf/register_tenants.py          creates the public tenant and its domain rows
+conf/harvest_tenants.py           registers installed apps inside every tenant schema
+conf/portal_storage.py            S3 static storage backend
+tofu/uffis.tfvars                 infrastructure inputs for the tethys-ecs-iac module
+tofu/backend.hcl                  tofu state location, key portals/uffis-portal.tfstate
+tofu-iam/                         OIDC CI roles, applied once with admin credentials
+.github/workflows/                build (image to ECR), tofu deploy, sync secrets to SSM
+```
+
+## How multi tenancy is wired
+
+Nothing in `tethys-uvx` is modified. Everything runs through the base image extension points.
+
+`conf/portal-config.d/05-tenancy.sh` runs after the base has rendered the config. It does two things
+the base cannot:
+
+1. Sets the database engine to `django_tenants.postgresql_backend`. The base overwrites whatever
+   `portal_config.yml` declares with the `TETHYS_DB_ENGINE` task environment variable, so the engine
+   can only be set from a hook.
+2. Adds the wildcard host in the two different spellings Django needs. CloudFront wants
+   `*.uhm.uffis.org`, Django `ALLOWED_HOSTS` wants `.uhm.uffis.org` with a leading dot, and Django
+   `CSRF_TRUSTED_ORIGINS` wants `https://*.uhm.uffis.org`. The hook also removes the invalid
+   `https://.uhm.uffis.org` entry the base derives automatically.
+
+`conf/init.d/10-tenancy.sh` runs at the end of provisioning, after the base has already run
+`tethys db migrate`. That ordering matters: `migrate_schemas` cannot bootstrap an empty database on
+its own, because the Tethys app registry skips its startup database work only for the literal
+`migrate` command. The base migrate creates the shared tables, then the hook migrates tenant schemas,
+registers the public tenant, and harvests apps into each tenant schema.
+
+`TENANT_APPS` lists six apps, not the two shown in the Tethys documentation. `tethys_apps` holds
+foreign keys into `tethys_services` and `tethys_compute`, so a tenant schema cannot be built without
+them. Omitting them makes `tethys manage create_tenant` fail while still exiting zero, leaving a half
+built schema. Including `tethys_quotas` and `guardian` additionally keeps quotas, jobs, and object
+permissions per tenant.
+
+`db_pool_mode` must stay `direct`. `django-tenants` selects the active tenant with `SET search_path`
+on the connection, so a transaction mode pooler such as Supavisor or PgBouncer will serve one tenant
+a different tenant's data.
+
+## One time setup
+
+Values marked `REPLACE_` in `tofu/uffis.tfvars`, `tofu/backend.hcl`, and `tofu-iam/backend.hcl` must
+be filled in before anything will apply.
+
+### 1. Credentials
+
+```bash
+aws sso login --sso-session <your-sso-session>
+export AWS_PROFILE=<your-admin-profile>
+export AWS_REGION=us-east-1
+aws sts get-caller-identity
+eval "$(aws configure export-credentials --profile "$AWS_PROFILE" --format env)"
+```
+
+OpenTofu's AWS provider does not refresh SSO tokens, so the `export-credentials` line is required
+even when the CLI itself works.
+
+### 2. RDS
+
+```bash
+aws rds create-db-subnet-group \
+  --db-subnet-group-name uffis-portal-db-subnets \
+  --db-subnet-group-description "uffis portal db" \
+  --subnet-ids <subnet-a> <subnet-b>
+
+SG=$(aws ec2 create-security-group --group-name uffis-portal-db \
+  --description "uffis portal Postgres" --vpc-id <vpc-id> \
+  --query GroupId --output text)
+
+aws rds create-db-instance \
+  --db-instance-identifier uffis-portal-db \
+  --db-instance-class db.t4g.medium \
+  --engine postgres --engine-version 17 \
+  --allocated-storage 50 --storage-type gp3 --storage-encrypted \
+  --master-username tethys_default \
+  --master-user-password '<strong-password>' \
+  --db-name tethys_platform \
+  --db-subnet-group-name uffis-portal-db-subnets \
+  --vpc-security-group-ids "$SG" \
+  --backup-retention-period 7 --no-publicly-accessible
+
+aws rds wait db-instance-available --db-instance-identifier uffis-portal-db
+aws rds describe-db-instances --db-instance-identifier uffis-portal-db \
+  --query 'DBInstances[0].Endpoint.Address' --output text
+```
+
+`--db-name tethys_platform` creates the application database at provision time. Do not plan on a
+separate `psql` step: the instance is not publicly accessible and its only ingress will be the
+Fargate security group, so there is no path to it from a workstation.
+
+The ingress rule is added later, in step 6, because the web security group does not exist until the
+first apply. Do not open the database to a VPC CIDR to get moving. The master credential is also the
+application credential.
+
+### 3. Certificate
+
+The certificate must live in `us-east-1` in the account that runs the portal, because CloudFront only
+reads certificates from there. The DNS validation record goes in the `uffis.org` hosted zone, which
+is in the UFFIS account. Those may be two different accounts.
+
+```bash
+aws acm request-certificate --region us-east-1 \
+  --domain-name uhm.uffis.org \
+  --subject-alternative-names '*.uhm.uffis.org' \
+  --validation-method DNS \
+  --query CertificateArn --output text
+
+aws acm describe-certificate --region us-east-1 --certificate-arn <arn> \
+  --query 'Certificate.DomainValidationOptions[].ResourceRecord'
+```
+
+ACM emits a single validation record for a name and its own wildcard, so expect one CNAME rather than
+two. Create it in `uffis.org`, then wait:
+
+```bash
+aws acm wait certificate-validated --region us-east-1 --certificate-arn <arn>
+```
+
+Put the ARN in `tofu/uffis.tfvars` as `acm_certificate_arn`.
+
+### 4. CI roles
+
+```bash
+cd tofu-iam
+tofu init -backend-config=backend.hcl
+tofu apply
+tofu output ecr_role_arn
+tofu output deploy_role_arn
+```
+
+Apply this once with admin credentials. It creates the role the deploy workflow assumes, so the
+deploy workflow cannot create it.
+
+```bash
+gh secret set AWS_ROLE_ARN        --repo Aquaveo/uffis-portal --body "<ecr_role_arn>"
+gh secret set AWS_DEPLOY_ROLE_ARN --repo Aquaveo/uffis-portal --body "<deploy_role_arn>"
+gh variable set AWS_REGION        --repo Aquaveo/uffis-portal --body us-east-1
+gh variable set ECR_REPOSITORY    --repo Aquaveo/uffis-portal --body tethys-portal
+```
+
+### 5. Secrets
+
+```bash
+gh secret set DB_PASSWORD        --repo Aquaveo/uffis-portal --body '<strong-password>'
+gh secret set PS_CONNECTION      --repo Aquaveo/uffis-portal --body '<postgis-conn-string>'
+gh secret set SECRET_KEY         --repo Aquaveo/uffis-portal --body "$(openssl rand -base64 48)"
+gh secret set SUPERUSER_PASSWORD --repo Aquaveo/uffis-portal --body '<admin-password>'
+
+gh workflow run sync-secrets.yml --repo Aquaveo/uffis-portal
+aws ssm get-parameters-by-path --path /uffis/portal --recursive \
+  --query 'Parameters[].Name' --output table
+```
+
+### 6. First deploy
+
+```bash
+gh workflow run build.yml --repo Aquaveo/uffis-portal
+```
+
+Set `image_uri` in `tofu/uffis.tfvars` to the tag the build pushed, commit, push, then:
+
+```bash
+gh workflow run tofu-deploy.yml --repo Aquaveo/uffis-portal -f action=plan
+gh workflow run tofu-deploy.yml --repo Aquaveo/uffis-portal -f action=apply
+```
+
+The first apply's provision task is expected to fail on the database wait, because the RDS security
+group still has no ingress. Add the rule now and apply again:
+
+```bash
+IAC=../tethys-ecs-iac/tofu
+tofu -chdir=$IAC init -reconfigure -backend-config="$PWD/tofu/backend.hcl"
+WEB_SG=$(tofu -chdir=$IAC output -raw web_security_group)
+aws ec2 authorize-security-group-ingress --group-id "$SG" \
+  --protocol tcp --port 5432 --source-group "$WEB_SG"
+
+gh workflow run tofu-deploy.yml --repo Aquaveo/uffis-portal -f action=apply
+```
+
+The `-reconfigure` is required. The shared module directory keeps whichever backend it was last
+initialized against, which may belong to another portal.
+
+### 7. DNS
+
+```bash
+tofu -chdir=$IAC output cloudfront_domain
+tofu -chdir=$IAC output -raw ecs_cluster | grep -q uffis && echo "state OK"
+```
+
+Create two records in `uffis.org`, both A and AAAA alias records to the CloudFront distribution
+(hosted zone ID `Z2FDTNDATAQYW2`):
+
+```
+uhm.uffis.org
+*.uhm.uffis.org
+```
+
+Use alias records rather than CNAME. Because of the wildcard, adding a tenant later needs no DNS
+change at all.
+
+### 8. Create tenants
+
+The public tenant is registered automatically during provisioning. Each real tenant is created once.
+
+Two things make the obvious form of these commands fail silently. A `containerOverrides` command
+replaces the container command, so `portal-config.sh` never runs and the tenancy guard rejects the
+call. And `create_tenant_superuser` wraps Django's interactive `createsuperuser`, which prints
+"skipped" and exits zero with no TTY. The `--noinput` spelling is consumed by the Tethys manage
+parser, so only `--no-input` reaches Django.
+
+```bash
+IAC=../tethys-ecs-iac/tofu
+CLUSTER=$(tofu -chdir=$IAC output -raw ecs_cluster)
+TD=$(tofu -chdir=$IAC output -raw provision_task_definition)
+WEB_SG=$(tofu -chdir=$IAC output -raw web_security_group)
+SUBNETS=$(tofu -chdir=$IAC output -json service_subnets | jq -r 'join(",")')
+NETCFG="awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$WEB_SG],assignPublicIp=ENABLED}"
+
+run_provision () {
+  TASK=$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$TD" \
+    --launch-type FARGATE --network-configuration "$NETCFG" \
+    --overrides "{\"containerOverrides\":[{\"name\":\"provision\",\"command\":[\"bash\",\"-lc\",\"$1\"]}]}" \
+    --query 'tasks[0].taskArn' --output text)
+  aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
+  aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" \
+    --query "tasks[0].containers[?name=='provision'].exitCode | [0]" --output text
+}
+
+run_provision "/usr/local/bin/portal-config.sh && tethys manage create_tenant \
+  --schema_name <tenant> --name '<Tenant Name>' \
+  --domain-domain <tenant>.uhm.uffis.org --domain-is_primary True"
+
+run_provision "/usr/local/bin/portal-config.sh && DJANGO_SUPERUSER_PASSWORD='<pw>' \
+  tethys manage create_tenant_superuser --schema <tenant> \
+  --no-input --username admin --email '<addr>'"
+```
+
+Always read the task log, never the exit code. `create_tenant` reports success even when the schema
+migration failed.
+
+A new tenant's app registry stays empty until the harvest hook runs again, so re-run the tofu deploy
+workflow (or `provision.sh`) after creating tenants.
+
+### 9. Verify
+
+```bash
+curl -sSI https://uhm.uffis.org/
+curl -sSI https://<tenant>.uhm.uffis.org/
+curl -sSI https://nope.uhm.uffis.org/
+```
+
+Expect 200, 200, and 404. A 400 on the third means the wildcard host translation failed. A 404 means
+the wildcard reaches Django and no tenant matched, which is correct.
+
+## Day to day
+
+New image: push to `main`, then bump `image_uri` in `tofu/uffis.tfvars` and run the tofu deploy
+workflow with `plan`, review, then `apply`.
+
+Rotate a secret: update the GitHub secret and run the sync secrets workflow.
+
+Base image change: after the `tethys-uvx` CI publishes, bump `BASE_BUILDER` and `BASE_TAG` in the
+Dockerfile to the new short sha, then rebuild and deploy. The base is pinned to immutable per commit
+tags so a build cannot pick up a partially published base.
+
+## Adding the app layer
+
+The first deployment ships no Tethys apps, so tenant routing can be proven before app behaviour is
+introduced. To add apps, extend `pyproject.toml` and the builder stage of the Dockerfile the way
+`enee-geoglows-portal` does, then redeploy. The harvest hook registers them into every tenant schema
+automatically.
+
+Apps with persistent stores need care. The persistent store database name is derived from the app
+package and the store name with no tenant component, so two tenants running the same app share one
+PostGIS database.
+
+## Known limits
+
+Media is not isolated per tenant. All tenants share one S3 bucket and one `media/` prefix served
+publicly through CloudFront, so any tenant's uploads are readable from any tenant hostname. Do not
+upload non public data until per tenant prefixes are added.
+
+The portal wide superuser cannot read tenant data through the admin, because authentication and
+sessions are per tenant. It can administer tenant and domain rows, and so can repoint any tenant
+hostname. Any principal with `ecs:RunTask` on the provision task definition, including the CI deploy
+role, can create a superuser inside any tenant schema.
+
+The health check matcher is set to `200-399,404`. The ALB health check reaches the task with the task
+private IP as the Host header, which can never have a domain row, so 404 is the correct healthy
+response under tenancy. A real fault still returns 5xx and still fails the check.

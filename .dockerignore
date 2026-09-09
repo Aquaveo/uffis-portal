@@ -1,0 +1,9 @@
+.git
+.github/
+*.md
+.env
+.env.*
+.gitignore
+.dockerignore
+tofu/
+tofu-iam/

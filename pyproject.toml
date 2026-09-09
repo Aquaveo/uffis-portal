@@ -1,0 +1,13 @@
+[project]
+name = "uffis-portal"
+version = "0.1.0"
+description = "UFFIS multi tenant Tethys portal app layer dependencies."
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "django-tenants>=3.14",
+    "django-storages",
+    "boto3",
+]
+
+[dependency-groups]
+dev = ["ruff"]
