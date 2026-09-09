@@ -22,6 +22,7 @@ permissions:
 jobs:
   tofu:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Checkout this repo (tfvars + backend)
         uses: actions/checkout@v4

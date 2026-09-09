@@ -168,6 +168,12 @@ tofu output deploy_role_arn
 Apply this once with admin credentials. It creates the role the deploy workflow assumes, so the
 deploy workflow cannot create it.
 
+The two roles trust different OIDC subjects. The ECR push role accepts `refs/heads/main` and version
+tags. The deploy role accepts only `environment:production`, so **create a GitHub Environment named
+`production`** on the repo before running the deploy or sync secrets workflows, or the role will
+refuse to be assumed. Add required reviewers to that environment if you want deploys gated on an
+approval.
+
 ```bash
 gh secret set AWS_ROLE_ARN        --repo Aquaveo/uffis-portal --body "<ecr_role_arn>"
 gh secret set AWS_DEPLOY_ROLE_ARN --repo Aquaveo/uffis-portal --body "<deploy_role_arn>"
@@ -306,8 +312,8 @@ tags so a build cannot pick up a partially published base.
 
 The first deployment ships no Tethys apps, so tenant routing can be proven before app behaviour is
 introduced. To add apps, extend `pyproject.toml` and the builder stage of the Dockerfile the way
-`enee-geoglows-portal` does, then redeploy. The harvest hook registers them into every tenant schema
-automatically.
+`enee-geoglows-portal` does, then redeploy. Apps also need a per schema registration pass before they
+appear for tenants, since the Tethys harvester only writes the public schema.
 
 Apps with persistent stores need care. The persistent store database name is derived from the app
 package and the store name with no tenant component, so two tenants running the same app share one
