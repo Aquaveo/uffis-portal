@@ -123,6 +123,28 @@ access controlled, which is the usual accepted tradeoff. If you would rather it 
 switch the instance to `manage_master_user_password = true` and have RDS generate it into Secrets
 Manager, then copy it into SSM instead of setting the GitHub secret.
 
+#### Backups and snapshots
+
+Automated backups run daily with seven day retention, in the `backup_window` (UTC, chosen to sit
+outside Honduras business hours). Destroying the instance takes a final snapshot, and
+`deletion_protection` means it refuses to be destroyed until that is turned off deliberately.
+
+Before a risky change, take a named snapshot by setting `manual_snapshot_id`:
+
+```bash
+tofu -chdir=tofu-rds apply -var vpc_id=<vpc-id> \
+  -var 'subnet_ids=["<subnet-a>","<subnet-b>"]' \
+  -var manual_snapshot_id=pre-tenant-migration
+```
+
+**Changing that value replaces the snapshot, which deletes the previous one.** It holds one named
+snapshot at a time, not a history. The daily automated backups are the history.
+
+This is a deliberate operator action owned by whoever owns `tofu-rds/`, not something the deploy
+pipeline does. A per deploy automatic snapshot would need a step in `tofu-deploy.yml` before the
+provision task, since a declarative resource cannot take a fresh snapshot per release. That is worth
+adding once tenant count makes a failed `migrate_schemas` expensive to unwind.
+
 ### 3. Certificate
 
 The certificate must live in `us-east-1` in the account that runs the portal, because CloudFront only
