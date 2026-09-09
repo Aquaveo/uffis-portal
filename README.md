@@ -20,8 +20,6 @@ conf/portal_config.yml            declarative portal settings, including TENANTS
 conf/portal-config.d/             config hooks, run by the base portal-config.sh at container start
 conf/init.d/                      provisioning hooks, run by the base provision.sh once per release
 conf/register_tenants.py          creates the public tenant and its domain rows
-conf/harvest_tenants.py           registers installed apps inside every tenant schema
-conf/site_tenants.py              applies site settings inside every tenant schema
 conf/portal_storage.py            S3 static storage backend
 tofu/uffis.tfvars                 infrastructure inputs for the tethys-ecs-iac module
 tofu/backend.hcl                  tofu state location, key portals/uffis-portal.tfstate
@@ -54,9 +52,13 @@ command with `MigrateSchemasCommand`, which syncs public and all tenants when gi
 `tethys manage migrate_schemas` afterwards would be a redundant second pass, and worse, the
 `tethys manage` path discards the child exit code, so a failed tenant migration would report success.
 
-The hook registers the public tenant's domain rows, harvests installed apps into each tenant schema,
-and applies site settings per tenant. The last two are needed because the Tethys harvester and
-`tethys site -f` both only ever touch the public schema.
+The hook registers the public tenant's domain rows. Without them `django-tenants` has no Domain to
+match and the portal 404s on its own hostname.
+
+Two things are deliberately absent until the app layer lands. The Tethys harvester only ever writes
+the app registry into the public schema, so a tenant's registry stays empty; and `tethys site -f`
+runs once on public, so tenants render stock branding rather than the `site_settings` block. Both
+need a per schema pass, and neither matters while the portal ships no apps.
 
 `conf/register_tenants.py` carries the portal domain as a module constant rather than reading it
 from the environment. The shared IaC module supplies no portal domain, so an environment read would
