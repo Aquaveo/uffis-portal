@@ -1,0 +1,36 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Ruff
+        run: uvx ruff check conf/
+
+      - name: Shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck conf/portal-config.d/*.sh conf/init.d/*.sh
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.12.3"
+
+      - name: Tofu fmt
+        run: tofu fmt -check -recursive tofu-iam/
+
+      - name: Placeholders resolved
+        run: |
+          if grep -rn REPLACE_ tofu/ tofu-iam/ ; then
+            echo "::warning::unresolved REPLACE_ placeholders remain; the deploy workflow will refuse to apply"
+          fi

@@ -34,10 +34,10 @@ settings:
       - "guardian"
     TENANT_LIMIT_SET_CALLS: false
     TENANT_COLOR_ADMIN_APPS: true
-    SHOW_PUBLIC_IF_NO_TENANT_FOUND: false
+    SHOW_PUBLIC_IF_NO_TENANT_FOUND: true
   DATABASES:
     default:
-      ENGINE: django_tenants.postgresql_backend
+      ENGINE: django.db.backends.postgresql
       NAME: tethys_platform
       USER: tethys_default
       HOST: postgres
@@ -48,7 +48,7 @@ settings:
     default:
       BACKEND: channels.layers.InMemoryChannelLayer
   TETHYS_PORTAL_CONFIG:
-    ENABLE_OPEN_PORTAL: true
+    ENABLE_OPEN_PORTAL: false
     BYPASS_TETHYS_HOME_PAGE: false
 
 site_settings:

@@ -1,43 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ "${TETHYS_DB_POOL_MODE:-direct}" != "direct" ]; then
+  echo "FATAL: multi tenancy requires TETHYS_DB_POOL_MODE=direct" >&2
+  echo "a transaction mode pooler multiplexes SET search_path across tenants" >&2
+  exit 1
+fi
+
 tethys settings --set DATABASES.default.ENGINE django_tenants.postgresql_backend
 
-WILDCARD="${PORTAL_WILDCARD_DOMAIN:-}"
-[ -n "$WILDCARD" ] || exit 0
+python /opt/portal/apply_wildcard_host.py
 
-CFG="${TETHYS_HOME:-/home/tethys/portal}/portal_config.yml"
-WILDCARD="$WILDCARD" python - "$CFG" <<'PY'
-import os
-import sys
-
-import yaml
-
-
-def apply_wildcard(path, wildcard):
-    """Add the wildcard host to ALLOWED_HOSTS and the CSRF origin, dropping the invalid derived one."""
-    suffix = wildcard.strip().lstrip("*")
-    with open(path) as handle:
-        cfg = yaml.safe_load(handle) or {}
-    settings = cfg.setdefault("settings", {})
-
-    hosts = list(settings.get("ALLOWED_HOSTS") or [])
-    if suffix not in hosts:
-        hosts.append(suffix)
-    settings["ALLOWED_HOSTS"] = hosts
-
-    origin = "https://*" + suffix
-    csrf = [o for o in (settings.get("CSRF_TRUSTED_ORIGINS") or []) if o != "https://" + suffix]
-    if origin not in csrf:
-        csrf.append(origin)
-    settings["CSRF_TRUSTED_ORIGINS"] = csrf
-
-    with open(path, "w") as handle:
-        yaml.safe_dump(cfg, handle, default_flow_style=False, sort_keys=False)
-    return hosts, csrf
-
-
-hosts, csrf = apply_wildcard(sys.argv[1], os.environ["WILDCARD"])
-print("tenancy allowed_hosts:", hosts)
-print("tenancy csrf_origins:", csrf)
-PY
+tethys settings -g DATABASES.default.ENGINE 2>/dev/null | grep -q django_tenants || {
+  echo "FATAL: tenancy engine was not applied" >&2
+  exit 1
+}

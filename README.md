@@ -19,8 +19,11 @@ pyproject.toml                    app layer dependencies (django-tenants, storag
 conf/portal_config.yml            declarative portal settings, including TENANTS_CONFIG
 conf/portal-config.d/             config hooks, run by the base portal-config.sh at container start
 conf/init.d/                      provisioning hooks, run by the base provision.sh once per release
+conf/portal_identity.py           this portal's own hostnames, the single source of truth
+conf/apply_wildcard_host.py       writes the Django wildcard host and CSRF origin
 conf/register_tenants.py          creates the public tenant and its domain rows
 conf/harvest_tenants.py           registers installed apps inside every tenant schema
+conf/site_tenants.py              applies site settings inside every tenant schema
 conf/portal_storage.py            S3 static storage backend
 tofu/uffis.tfvars                 infrastructure inputs for the tethys-ecs-iac module
 tofu/backend.hcl                  tofu state location, key portals/uffis-portal.tfstate
@@ -32,22 +35,32 @@ tofu-iam/                         OIDC CI roles, applied once with admin credent
 
 Nothing in `tethys-uvx` is modified. Everything runs through the base image extension points.
 
-`conf/portal-config.d/05-tenancy.sh` runs after the base has rendered the config. It does two things
-the base cannot:
+`conf/portal-config.d/05-tenancy.sh` runs after the base has rendered the config. It does three
+things the base cannot:
 
-1. Sets the database engine to `django_tenants.postgresql_backend`. The base overwrites whatever
-   `portal_config.yml` declares with the `TETHYS_DB_ENGINE` task environment variable, so the engine
-   can only be set from a hook.
-2. Adds the wildcard host in the two different spellings Django needs. CloudFront wants
-   `*.uhm.uffis.org`, Django `ALLOWED_HOSTS` wants `.uhm.uffis.org` with a leading dot, and Django
-   `CSRF_TRUSTED_ORIGINS` wants `https://*.uhm.uffis.org`. The hook also removes the invalid
-   `https://.uhm.uffis.org` entry the base derives automatically.
+1. Refuses to start when `TETHYS_DB_POOL_MODE` is not `direct`. That is the only runtime guard on the
+   tenant isolation invariant, so it fails loudly rather than serving one tenant another's data.
+2. Sets the database engine to `django_tenants.postgresql_backend`, then reads it back and fails if
+   it did not stick. The base overwrites whatever `portal_config.yml` declares with the
+   `TETHYS_DB_ENGINE` task environment variable, so the engine can only be set from a hook, and the
+   `ENGINE` line in `portal_config.yml` is inert.
+3. Adds the wildcard host in the two spellings Django needs. CloudFront wants `*.uhm.uffis.org`,
+   Django `ALLOWED_HOSTS` wants `.uhm.uffis.org` with a leading dot, and Django
+   `CSRF_TRUSTED_ORIGINS` wants `https://*.uhm.uffis.org`.
 
-`conf/init.d/10-tenancy.sh` runs at the end of provisioning, after the base has already run
-`tethys db migrate`. That ordering matters: `migrate_schemas` cannot bootstrap an empty database on
-its own, because the Tethys app registry skips its startup database work only for the literal
-`migrate` command. The base migrate creates the shared tables, then the hook migrates tenant schemas,
-registers the public tenant, and harvests apps into each tenant schema.
+`conf/init.d/10-tenancy.sh` runs at the end of provisioning. It does **not** migrate: the base image's
+`tethys db migrate` already covers every schema, because django-tenants shadows Django's `migrate`
+command with `MigrateSchemasCommand`, which syncs public and all tenants when given no flag. Calling
+`tethys manage migrate_schemas` afterwards would be a redundant second pass, and worse, the
+`tethys manage` path discards the child exit code, so a failed tenant migration would report success.
+
+The hook registers the public tenant's domain rows, harvests installed apps into each tenant schema,
+and applies site settings per tenant. The last two are needed because the Tethys harvester and
+`tethys site -f` both only ever touch the public schema.
+
+Hostnames come from `conf/portal_identity.py`, not from the environment. The shared IaC module does
+not supply a portal domain or a wildcard, so reading them from the task environment would silently
+yield nothing and leave the portal 404ing on its own domain.
 
 `TENANT_APPS` lists six apps, not the two shown in the Tethys documentation. `tethys_apps` holds
 foreign keys into `tethys_services` and `tethys_compute`, so a tenant schema cannot be built without
@@ -271,8 +284,10 @@ curl -sSI https://<tenant>.uhm.uffis.org/
 curl -sSI https://nope.uhm.uffis.org/
 ```
 
-Expect 200, 200, and 404. A 400 on the third means the wildcard host translation failed. A 404 means
-the wildcard reaches Django and no tenant matched, which is correct.
+Expect 200, 200, 200. `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is true, so an unregistered subdomain serves
+the public portal rather than 404ing. A **400 or 404 anywhere here means something is broken**, which
+is the point: under tenancy `TenantMainMiddleware` turns a DisallowedHost into a 404 as well, so
+tolerating 404 at the load balancer would make a misconfigured portal look healthy.
 
 ## Day to day
 
@@ -307,6 +322,8 @@ sessions are per tenant. It can administer tenant and domain rows, and so can re
 hostname. Any principal with `ecs:RunTask` on the provision task definition, including the CI deploy
 role, can create a superuser inside any tenant schema.
 
-The health check matcher is set to `200-399,404`. The ALB health check reaches the task with the task
-private IP as the Host header, which can never have a domain row, so 404 is the correct healthy
-response under tenancy. A real fault still returns 5xx and still fails the check.
+The ALB health check reaches the task with the task private IP as the Host header, which can never
+have a domain row. Rather than widening the target group matcher to tolerate 404, the portal sets
+`SHOW_PUBLIC_IF_NO_TENANT_FOUND: true` so that request legitimately returns 200 and the matcher stays
+at `200-399`. The tradeoff is that a mistyped tenant subdomain serves the public portal instead of
+404ing; the gain is that a 404 still means something is genuinely wrong.

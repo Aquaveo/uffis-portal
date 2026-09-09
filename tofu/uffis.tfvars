@@ -11,13 +11,13 @@ static_bucket_name    = "uffis-portal-static"
 portal_domain         = "uhm.uffis.org"
 portal_domain_aliases = ["*.uhm.uffis.org"]
 acm_certificate_arn   = "REPLACE_ACM_CERT_ARN"
-health_check_matcher  = "200-399,404"
 
 image_uri = "REPLACE_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/tethys-portal:uffis-REPLACE_SHA"
 
 task_cpu      = "1024"
 task_memory   = "4096"
 desired_count = 1
+asgi_processes = "1"
 server        = "gunicorn"
 
 db_host      = "REPLACE_RDS_ENDPOINT"
