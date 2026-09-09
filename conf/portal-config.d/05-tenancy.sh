@@ -9,8 +9,6 @@ fi
 
 tethys settings --set DATABASES.default.ENGINE django_tenants.postgresql_backend
 
-python /opt/portal/apply_wildcard_host.py
-
 tethys settings -g DATABASES.default.ENGINE 2>/dev/null | grep -q django_tenants || {
   echo "FATAL: tenancy engine was not applied" >&2
   exit 1

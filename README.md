@@ -19,8 +19,6 @@ pyproject.toml                    app layer dependencies (django-tenants, storag
 conf/portal_config.yml            declarative portal settings, including TENANTS_CONFIG
 conf/portal-config.d/             config hooks, run by the base portal-config.sh at container start
 conf/init.d/                      provisioning hooks, run by the base provision.sh once per release
-conf/portal_identity.py           this portal's own hostnames, the single source of truth
-conf/apply_wildcard_host.py       writes the Django wildcard host and CSRF origin
 conf/register_tenants.py          creates the public tenant and its domain rows
 conf/harvest_tenants.py           registers installed apps inside every tenant schema
 conf/site_tenants.py              applies site settings inside every tenant schema
@@ -35,18 +33,20 @@ tofu-iam/                         OIDC CI roles, applied once with admin credent
 
 Nothing in `tethys-uvx` is modified. Everything runs through the base image extension points.
 
-`conf/portal-config.d/05-tenancy.sh` runs after the base has rendered the config. It does three
-things the base cannot:
+The wildcard host lives in `conf/portal_config.yml` directly. The base **appends** to
+`ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` rather than replacing them, so the declared
+`.uhm.uffis.org` and `https://*.uhm.uffis.org` survive its render. Note the three spellings: the
+CloudFront alias in the tfvars is `*.uhm.uffis.org`, Django's host wildcard needs the leading dot,
+and Django's CSRF origin needs the scheme and the asterisk.
 
-1. Refuses to start when `TETHYS_DB_POOL_MODE` is not `direct`. That is the only runtime guard on the
-   tenant isolation invariant, so it fails loudly rather than serving one tenant another's data.
-2. Sets the database engine to `django_tenants.postgresql_backend`, then reads it back and fails if
-   it did not stick. The base overwrites whatever `portal_config.yml` declares with the
-   `TETHYS_DB_ENGINE` task environment variable, so the engine can only be set from a hook, and the
-   `ENGINE` line in `portal_config.yml` is inert.
-3. Adds the wildcard host in the two spellings Django needs. CloudFront wants `*.uhm.uffis.org`,
-   Django `ALLOWED_HOSTS` wants `.uhm.uffis.org` with a leading dot, and Django
-   `CSRF_TRUSTED_ORIGINS` wants `https://*.uhm.uffis.org`.
+`conf/portal-config.d/05-tenancy.sh` covers the two things config cannot:
+
+1. It refuses to start when `TETHYS_DB_POOL_MODE` is not `direct`. That is the only runtime guard on
+   the tenant isolation invariant, so it fails loudly rather than serving one tenant another's data.
+2. It sets the database engine to `django_tenants.postgresql_backend`, then reads it back and fails
+   if it did not stick. Unlike the host lists, the base **overwrites** this key from the
+   `TETHYS_DB_ENGINE` task environment variable, so the `ENGINE` line in `portal_config.yml` is inert
+   and the engine can only be set from a hook.
 
 `conf/init.d/10-tenancy.sh` runs at the end of provisioning. It does **not** migrate: the base image's
 `tethys db migrate` already covers every schema, because django-tenants shadows Django's `migrate`
@@ -58,9 +58,9 @@ The hook registers the public tenant's domain rows, harvests installed apps into
 and applies site settings per tenant. The last two are needed because the Tethys harvester and
 `tethys site -f` both only ever touch the public schema.
 
-Hostnames come from `conf/portal_identity.py`, not from the environment. The shared IaC module does
-not supply a portal domain or a wildcard, so reading them from the task environment would silently
-yield nothing and leave the portal 404ing on its own domain.
+`conf/register_tenants.py` carries the portal domain as a module constant rather than reading it
+from the environment. The shared IaC module supplies no portal domain, so an environment read would
+silently yield nothing and leave the portal 404ing on its own hostname.
 
 `TENANT_APPS` lists six apps, not the two shown in the Tethys documentation. `tethys_apps` holds
 foreign keys into `tethys_services` and `tethys_compute`, so a tenant schema cannot be built without
