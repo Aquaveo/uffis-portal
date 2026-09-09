@@ -45,7 +45,7 @@ locals {
   oidc_provider_arn = "arn:aws:iam::${local.account}:oidc-provider/token.actions.githubusercontent.com"
 }
 
-data "aws_iam_policy_document" "assume" {
+data "aws_iam_policy_document" "assume_ecr" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     principals {
@@ -60,14 +60,37 @@ data "aws_iam_policy_document" "assume" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_org}/${var.github_repo}:*"]
+      values = [
+        "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/main",
+        "repo:${var.github_org}/${var.github_repo}:ref:refs/tags/*",
+      ]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "assume_deploy" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [local.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.github_org}/${var.github_repo}:environment:production"]
     }
   }
 }
 
 resource "aws_iam_role" "ecr" {
   name               = "${var.github_repo}-ci-ecr"
-  assume_role_policy = data.aws_iam_policy_document.assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume_ecr.json
 }
 
 data "aws_iam_policy_document" "ecr_push" {
@@ -92,7 +115,7 @@ resource "aws_iam_role_policy" "ecr_push" {
 
 resource "aws_iam_role" "deploy" {
   name               = "${var.github_repo}-tofu-deploy"
-  assume_role_policy = data.aws_iam_policy_document.assume.json
+  assume_role_policy = data.aws_iam_policy_document.assume_deploy.json
 }
 
 resource "aws_iam_role_policy_attachment" "deploy_poweruser" {
@@ -124,8 +147,15 @@ data "aws_iam_policy_document" "deploy_state" {
     resources = ["arn:aws:s3:::${var.state_bucket}"]
   }
   statement {
-    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
-    resources = ["arn:aws:s3:::${var.state_bucket}/*"]
+    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = [
+      "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}.tfstate",
+      "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}.tfstate.tflock",
+      "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}-iam.tfstate",
+      "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}-iam.tfstate.tflock",
+      "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}-rds.tfstate",
+      "arn:aws:s3:::${var.state_bucket}/portals/${var.github_repo}-rds.tfstate.tflock",
+    ]
   }
 }
 

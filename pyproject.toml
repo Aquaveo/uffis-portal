@@ -4,10 +4,16 @@ version = "0.1.0"
 description = "UFFIS multi tenant Tethys portal app layer dependencies."
 requires-python = ">=3.10,<3.13"
 dependencies = [
-    "django-tenants>=3.14",
-    "django-storages",
-    "boto3",
+    "django-tenants>=3.14,<4",
+    "django-storages>=1.14,<2",
+    "boto3<2",
 ]
 
 [dependency-groups]
 dev = ["ruff"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+extend-select = ["E402", "RUF100"]

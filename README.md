@@ -20,10 +20,10 @@ conf/portal_config.yml            declarative portal settings, including TENANTS
 conf/portal-config.d/             config hooks, run by the base portal-config.sh at container start
 conf/init.d/                      provisioning hooks, run by the base provision.sh once per release
 conf/register_tenants.py          creates the public tenant and its domain rows
-conf/harvest_tenants.py           registers installed apps inside every tenant schema
 conf/portal_storage.py            S3 static storage backend
 tofu/uffis.tfvars                 infrastructure inputs for the tethys-ecs-iac module
 tofu/backend.hcl                  tofu state location, key portals/uffis-portal.tfstate
+tofu-rds/                         the Postgres instance, applied once with admin credentials
 tofu-iam/                         OIDC CI roles, applied once with admin credentials
 .github/workflows/                build (image to ECR), tofu deploy, sync secrets to SSM
 ```
@@ -32,22 +32,38 @@ tofu-iam/                         OIDC CI roles, applied once with admin credent
 
 Nothing in `tethys-uvx` is modified. Everything runs through the base image extension points.
 
-`conf/portal-config.d/05-tenancy.sh` runs after the base has rendered the config. It does two things
-the base cannot:
+The wildcard host lives in `conf/portal_config.yml` directly. The base **appends** to
+`ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` rather than replacing them, so the declared
+`.uhm.uffis.org` and `https://*.uhm.uffis.org` survive its render. Note the three spellings: the
+CloudFront alias in the tfvars is `*.uhm.uffis.org`, Django's host wildcard needs the leading dot,
+and Django's CSRF origin needs the scheme and the asterisk.
 
-1. Sets the database engine to `django_tenants.postgresql_backend`. The base overwrites whatever
-   `portal_config.yml` declares with the `TETHYS_DB_ENGINE` task environment variable, so the engine
-   can only be set from a hook.
-2. Adds the wildcard host in the two different spellings Django needs. CloudFront wants
-   `*.uhm.uffis.org`, Django `ALLOWED_HOSTS` wants `.uhm.uffis.org` with a leading dot, and Django
-   `CSRF_TRUSTED_ORIGINS` wants `https://*.uhm.uffis.org`. The hook also removes the invalid
-   `https://.uhm.uffis.org` entry the base derives automatically.
+`conf/portal-config.d/05-tenancy.sh` covers the two things config cannot:
 
-`conf/init.d/10-tenancy.sh` runs at the end of provisioning, after the base has already run
-`tethys db migrate`. That ordering matters: `migrate_schemas` cannot bootstrap an empty database on
-its own, because the Tethys app registry skips its startup database work only for the literal
-`migrate` command. The base migrate creates the shared tables, then the hook migrates tenant schemas,
-registers the public tenant, and harvests apps into each tenant schema.
+1. It refuses to start when `TETHYS_DB_POOL_MODE` is not `direct`. That is the only runtime guard on
+   the tenant isolation invariant, so it fails loudly rather than serving one tenant another's data.
+2. It sets the database engine to `django_tenants.postgresql_backend`, then reads it back and fails
+   if it did not stick. Unlike the host lists, the base **overwrites** this key from the
+   `TETHYS_DB_ENGINE` task environment variable, so the `ENGINE` line in `portal_config.yml` is inert
+   and the engine can only be set from a hook.
+
+`conf/init.d/10-tenancy.sh` runs at the end of provisioning. It does **not** migrate: the base image's
+`tethys db migrate` already covers every schema, because django-tenants shadows Django's `migrate`
+command with `MigrateSchemasCommand`, which syncs public and all tenants when given no flag. Calling
+`tethys manage migrate_schemas` afterwards would be a redundant second pass, and worse, the
+`tethys manage` path discards the child exit code, so a failed tenant migration would report success.
+
+The hook registers the public tenant's domain rows. Without them `django-tenants` has no Domain to
+match and the portal 404s on its own hostname.
+
+Two things are deliberately absent until the app layer lands. The Tethys harvester only ever writes
+the app registry into the public schema, so a tenant's registry stays empty; and `tethys site -f`
+runs once on public, so tenants render stock branding rather than the `site_settings` block. Both
+need a per schema pass, and neither matters while the portal ships no apps.
+
+`conf/register_tenants.py` carries the portal domain as a module constant rather than reading it
+from the environment. The shared IaC module supplies no portal domain, so an environment read would
+silently yield nothing and leave the portal 404ing on its own hostname.
 
 `TENANT_APPS` lists six apps, not the two shown in the Tethys documentation. `tethys_apps` holds
 foreign keys into `tethys_services` and `tethys_compute`, so a tenant schema cannot be built without
@@ -79,40 +95,33 @@ even when the CLI itself works.
 
 ### 2. RDS
 
+`tofu-rds/` is a separate root module with its own state key, so a `tofu destroy` of the portal
+cannot reach the database. The instance also carries `deletion_protection = true` and takes a final
+snapshot, so destroying it takes two deliberate steps.
+
 ```bash
-aws rds create-db-subnet-group \
-  --db-subnet-group-name uffis-portal-db-subnets \
-  --db-subnet-group-description "uffis portal db" \
-  --subnet-ids <subnet-a> <subnet-b>
-
-SG=$(aws ec2 create-security-group --group-name uffis-portal-db \
-  --description "uffis portal Postgres" --vpc-id <vpc-id> \
-  --query GroupId --output text)
-
-aws rds create-db-instance \
-  --db-instance-identifier uffis-portal-db \
-  --db-instance-class db.t4g.medium \
-  --engine postgres --engine-version 17 \
-  --allocated-storage 50 --storage-type gp3 --storage-encrypted \
-  --master-username tethys_default \
-  --master-user-password '<strong-password>' \
-  --db-name tethys_platform \
-  --db-subnet-group-name uffis-portal-db-subnets \
-  --vpc-security-group-ids "$SG" \
-  --backup-retention-period 7 --no-publicly-accessible
-
-aws rds wait db-instance-available --db-instance-identifier uffis-portal-db
-aws rds describe-db-instances --db-instance-identifier uffis-portal-db \
-  --query 'DBInstances[0].Endpoint.Address' --output text
+cd tofu-rds
+tofu init -backend-config=backend.hcl
+export TF_VAR_master_password='<strong-password>'
+tofu apply -var vpc_id=<vpc-id> -var 'subnet_ids=["<subnet-a>","<subnet-b>"]'
+tofu output db_host
 ```
 
-`--db-name tethys_platform` creates the application database at provision time. Do not plan on a
-separate `psql` step: the instance is not publicly accessible and its only ingress will be the
-Fargate security group, so there is no path to it from a workstation.
+Put `db_host` in `tofu/uffis.tfvars`, and set the same password as the `DB_PASSWORD` GitHub secret in
+step 5 so the running task and the instance agree.
 
-The ingress rule is added later, in step 6, because the web security group does not exist until the
-first apply. Do not open the database to a VPC CIDR to get moving. The master credential is also the
-application credential.
+`db_name` is created with the instance, so there is no separate `psql` step. That matters because the
+instance is not publicly accessible and its only ingress will be the Fargate security group, so there
+is no network path to it from a workstation.
+
+**The database stays closed until step 6.** Its ingress source is the portal's web security group,
+which does not exist until the first portal apply. Do not open it to a VPC CIDR to get moving; the
+master credential is also the application credential.
+
+The master password is stored in this module's state. The state bucket is versioned, encrypted and
+access controlled, which is the usual accepted tradeoff. If you would rather it never touch state,
+switch the instance to `manage_master_user_password = true` and have RDS generate it into Secrets
+Manager, then copy it into SSM instead of setting the GitHub secret.
 
 ### 3. Certificate
 
@@ -153,6 +162,12 @@ tofu output deploy_role_arn
 Apply this once with admin credentials. It creates the role the deploy workflow assumes, so the
 deploy workflow cannot create it.
 
+The two roles trust different OIDC subjects. The ECR push role accepts `refs/heads/main` and version
+tags. The deploy role accepts only `environment:production`, so **create a GitHub Environment named
+`production`** on the repo before running the deploy or sync secrets workflows, or the role will
+refuse to be assumed. Add required reviewers to that environment if you want deploys gated on an
+approval.
+
 ```bash
 gh secret set AWS_ROLE_ARN        --repo Aquaveo/uffis-portal --body "<ecr_role_arn>"
 gh secret set AWS_DEPLOY_ROLE_ARN --repo Aquaveo/uffis-portal --body "<deploy_role_arn>"
@@ -187,14 +202,17 @@ gh workflow run tofu-deploy.yml --repo Aquaveo/uffis-portal -f action=apply
 ```
 
 The first apply's provision task is expected to fail on the database wait, because the RDS security
-group still has no ingress. Add the rule now and apply again:
+group still has no ingress. Open it with the web security group the apply just created, then apply
+again:
 
 ```bash
 IAC=../tethys-ecs-iac/tofu
 tofu -chdir=$IAC init -reconfigure -backend-config="$PWD/tofu/backend.hcl"
 WEB_SG=$(tofu -chdir=$IAC output -raw web_security_group)
-aws ec2 authorize-security-group-ingress --group-id "$SG" \
-  --protocol tcp --port 5432 --source-group "$WEB_SG"
+
+tofu -chdir=tofu-rds apply -var vpc_id=<vpc-id> \
+  -var 'subnet_ids=["<subnet-a>","<subnet-b>"]' \
+  -var web_security_group_id="$WEB_SG"
 
 gh workflow run tofu-deploy.yml --repo Aquaveo/uffis-portal -f action=apply
 ```
@@ -271,8 +289,10 @@ curl -sSI https://<tenant>.uhm.uffis.org/
 curl -sSI https://nope.uhm.uffis.org/
 ```
 
-Expect 200, 200, and 404. A 400 on the third means the wildcard host translation failed. A 404 means
-the wildcard reaches Django and no tenant matched, which is correct.
+Expect 200, 200, 200. `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is true, so an unregistered subdomain serves
+the public portal rather than 404ing. A **400 or 404 anywhere here means something is broken**, which
+is the point: under tenancy `TenantMainMiddleware` turns a DisallowedHost into a 404 as well, so
+tolerating 404 at the load balancer would make a misconfigured portal look healthy.
 
 ## Day to day
 
@@ -289,8 +309,8 @@ tags so a build cannot pick up a partially published base.
 
 The first deployment ships no Tethys apps, so tenant routing can be proven before app behaviour is
 introduced. To add apps, extend `pyproject.toml` and the builder stage of the Dockerfile the way
-`enee-geoglows-portal` does, then redeploy. The harvest hook registers them into every tenant schema
-automatically.
+`enee-geoglows-portal` does, then redeploy. Apps also need a per schema registration pass before they
+appear for tenants, since the Tethys harvester only writes the public schema.
 
 Apps with persistent stores need care. The persistent store database name is derived from the app
 package and the store name with no tenant component, so two tenants running the same app share one
@@ -307,6 +327,8 @@ sessions are per tenant. It can administer tenant and domain rows, and so can re
 hostname. Any principal with `ecs:RunTask` on the provision task definition, including the CI deploy
 role, can create a superuser inside any tenant schema.
 
-The health check matcher is set to `200-399,404`. The ALB health check reaches the task with the task
-private IP as the Host header, which can never have a domain row, so 404 is the correct healthy
-response under tenancy. A real fault still returns 5xx and still fails the check.
+The ALB health check reaches the task with the task private IP as the Host header, which can never
+have a domain row. Rather than widening the target group matcher to tolerate 404, the portal sets
+`SHOW_PUBLIC_IF_NO_TENANT_FOUND: true` so that request legitimately returns 200 and the matcher stays
+at `200-399`. The tradeoff is that a mistyped tenant subdomain serves the public portal instead of
+404ing; the gain is that a 404 still means something is genuinely wrong.

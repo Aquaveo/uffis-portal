@@ -6,9 +6,13 @@ settings:
   ALLOWED_HOSTS:
     - localhost
     - 127.0.0.1
+    - uhm.uffis.org
+    - .uhm.uffis.org
   CSRF_TRUSTED_ORIGINS:
     - http://localhost:8000
     - http://127.0.0.1:8000
+    - https://uhm.uffis.org
+    - https://*.uhm.uffis.org
   SECURE_PROXY_SSL_HEADER:
     - HTTP_X_FORWARDED_PROTO
     - https
@@ -34,10 +38,10 @@ settings:
       - "guardian"
     TENANT_LIMIT_SET_CALLS: false
     TENANT_COLOR_ADMIN_APPS: true
-    SHOW_PUBLIC_IF_NO_TENANT_FOUND: false
+    SHOW_PUBLIC_IF_NO_TENANT_FOUND: true
   DATABASES:
     default:
-      ENGINE: django_tenants.postgresql_backend
+      ENGINE: django.db.backends.postgresql
       NAME: tethys_platform
       USER: tethys_default
       HOST: postgres
@@ -48,7 +52,7 @@ settings:
     default:
       BACKEND: channels.layers.InMemoryChannelLayer
   TETHYS_PORTAL_CONFIG:
-    ENABLE_OPEN_PORTAL: true
+    ENABLE_OPEN_PORTAL: false
     BYPASS_TETHYS_HOME_PAGE: false
 
 site_settings:
