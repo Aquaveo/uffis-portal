@@ -221,6 +221,17 @@ aws ssm get-parameters-by-path --path /uffis/portal --recursive \
 
 ### 6. First deploy
 
+The database is closed until the portal apply exists. `tofu-rds` only opens port 5432 when
+`web_security_group_id` names the Fargate web security group, and that group is created by the
+portal apply, so the first deploy is two phased. Run the portal apply, take `web_security_group_id`
+from its output, put it in `tofu-rds/uffis.tfvars` and apply `tofu-rds` again, then run provision.
+Skipping the second apply leaves the web task crashlooping on `connection timed out` to RDS and the
+provision task stuck in its database wait loop.
+
+The provision wait is capped below the OIDC credential lifetime on purpose. The role session lasts
+an hour, so a wait that also lasted an hour would always die in `ExpiredTokenException` before it
+could report its own timeout.
+
 ```bash
 gh workflow run build.yml --repo Aquaveo/uffis-portal
 ```
