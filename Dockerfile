@@ -17,8 +17,10 @@ ARG TETHYS_DEBUG_MODE="false"
 ENV DEV_REACT_CONFIG="${TETHYS_APPS_ROOT}/tethysdash/reactapp/config/development.env" \
     PROD_REACT_CONFIG="${TETHYS_APPS_ROOT}/tethysdash/reactapp/config/production.env"
 
-RUN git clone --depth 1 https://github.com/tethysplatform/tethysapp-tethys_dash.git \
+ARG TETHYSDASH_REF=b3850b96343cb9a5aae4509c2a9f9555229593f8
+RUN git clone https://github.com/tethysplatform/tethysapp-tethys_dash.git \
       "${TETHYS_APPS_ROOT}/tethysdash" \
+  && git -C "${TETHYS_APPS_ROOT}/tethysdash" checkout --detach "${TETHYSDASH_REF}" \
   && mv "${DEV_REACT_CONFIG}" "${PROD_REACT_CONFIG}" \
   && sed -i "s#TETHYS_DEBUG_MODE.*#TETHYS_DEBUG_MODE = ${TETHYS_DEBUG_MODE}#g" "${PROD_REACT_CONFIG}" \
   && sed -i "s#TETHYS_LOADER_DELAY.*#TETHYS_LOADER_DELAY = ${TETHYS_LOADER_DELAY}#g" "${PROD_REACT_CONFIG}" \
