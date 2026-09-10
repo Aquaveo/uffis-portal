@@ -426,10 +426,18 @@ upstream in `tethysapp-tethys_dash` #183 and the local workaround is gone. tethy
 from its default branch unpinned, so the fix is present. Pinning tethysdash to a release older than
 that fix brings the `FileNotFoundError` back.
 
-When rebuilding locally to pick up a tethysdash change, bust both stages:
-`docker build --no-cache-filter builder,runtime`. Busting only `builder` leaves the runtime stage's
-`COPY --from=builder` cached, so the image keeps the old tethysdash and looks like the fix did not
-land.
+tethysdash is pinned by commit in `TETHYSDASH_REF`, not cloned from a moving branch. A
+`git clone --depth 1` of a branch is not cache safe: Docker cannot tell the remote moved, so the
+layer is reused forever and the same portal commit can build two different images. That bit us
+once, the CI build reused a cached clone from before the upstream fix and provisioning failed with
+`FileNotFoundError` after the local workaround had been removed. Bump the pin deliberately to take
+a tethysdash change.
+
+The CI build uses the GitHub Actions layer cache, `cache-from` and `cache-to: type=gha`, so a
+cached layer survives across runs and across runners. When rebuilding locally to pick up a
+tethysdash change, bust both stages: `docker build --no-cache-filter builder,runtime`. Busting only
+`builder` leaves the runtime stage's `COPY --from=builder` cached, so the image keeps the old
+tethysdash and looks like the change did not land.
 
 Four of the six get a thumbnail; the two `impact_layer` drivers report no PNG available and are
 skipped from static collection. They are still registered and usable, they just have no icon.
