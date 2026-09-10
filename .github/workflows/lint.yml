@@ -29,8 +29,12 @@ jobs:
       - name: Tofu fmt
         run: tofu fmt -check -recursive tofu-iam/ tofu-rds/
 
-      - name: Placeholders resolved
+      - name: No account identifiers committed
         run: |
-          if grep -rn REPLACE_ tofu/ tofu-iam/ tofu-rds/ ; then
-            echo "::warning::unresolved REPLACE_ placeholders remain; the deploy workflow will refuse to apply"
+          set -euo pipefail
+          if git grep -nE '[0-9]{12}|vpc-0[0-9a-f]{8,}|subnet-0[0-9a-f]{8,}' -- \
+               ':!*.md' ':!.github/workflows/lint.yml' ; then
+            echo "::error::an AWS account id, vpc or subnet leaked into a tracked file"
+            exit 1
           fi
+          echo "no account identifiers in tracked files"

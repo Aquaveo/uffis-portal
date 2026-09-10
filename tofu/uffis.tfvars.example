@@ -1,0 +1,27 @@
+org         = "uffis"
+app         = "portal"
+environment = "production"
+region      = "us-east-1"
+
+vpc_id          = "__VPC_ID__"
+alb_subnets     = __SUBNET_IDS__
+service_subnets = __SUBNET_IDS__
+
+static_bucket_name    = "uffis-portal-static"
+portal_domain         = "__PORTAL_DOMAIN__"
+portal_domain_aliases = ["*.__PORTAL_DOMAIN__"]
+acm_certificate_arn   = "__ACM_ARN__"
+
+image_uri = "__ACCOUNT_ID__.dkr.ecr.us-east-1.amazonaws.com/tethys-portal:__IMAGE_TAG__"
+
+task_cpu       = "1024"
+task_memory    = "4096"
+desired_count  = 1
+asgi_processes = "1"
+server         = "gunicorn"
+
+db_host      = "__DB_HOST__"
+db_username  = "tethys_default"
+db_name      = "tethys_platform"
+db_port      = 5432
+db_pool_mode = "direct"

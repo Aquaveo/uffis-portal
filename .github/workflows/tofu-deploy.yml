@@ -9,6 +9,10 @@ on:
         default: plan
         type: choice
         options: [plan, apply]
+      image_tag:
+        description: "Image tag to deploy, e.g. uffis-a1b2c3d"
+        required: true
+        type: string
       iac_ref:
         description: "Aquaveo/tethys-ecs-iac ref. Pinned so the module cannot move between a reviewed plan and an apply."
         required: false
@@ -34,12 +38,39 @@ jobs:
           ref: ${{ inputs.iac_ref }}
           path: iac
 
+      - name: Render tofu inputs
+        env:
+          STATE_BUCKET: ${{ vars.TOFU_STATE_BUCKET }}
+          ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+          VPC_ID: ${{ vars.VPC_ID }}
+          SUBNET_IDS: ${{ vars.SUBNET_IDS }}
+          ACM_ARN: ${{ vars.ACM_CERTIFICATE_ARN }}
+          DB_HOST: ${{ vars.DB_HOST }}
+          PORTAL_DOMAIN: ${{ vars.PORTAL_DOMAIN }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          for v in STATE_BUCKET ACCOUNT_ID VPC_ID SUBNET_IDS ACM_ARN DB_HOST PORTAL_DOMAIN IMAGE_TAG; do
+            [ -n "${!v}" ] || { echo "::error::repository variable $v is not set"; exit 1; }
+          done
+          cat > tofu/backend.hcl <<EOF
+          bucket = "${STATE_BUCKET}"
+          region = "${{ vars.AWS_REGION }}"
+          key    = "portals/uffis-portal.tfstate"
+          EOF
+          sed -e "s|__ACCOUNT_ID__|${ACCOUNT_ID}|g" \
+              -e "s|__VPC_ID__|${VPC_ID}|g" \
+              -e "s|__SUBNET_IDS__|${SUBNET_IDS}|g" \
+              -e "s|__ACM_ARN__|${ACM_ARN}|g" \
+              -e "s|__DB_HOST__|${DB_HOST}|g" \
+              -e "s|__PORTAL_DOMAIN__|${PORTAL_DOMAIN}|g" \
+              -e "s|__IMAGE_TAG__|${IMAGE_TAG}|g" \
+              tofu/uffis.tfvars.example > tofu/uffis.tfvars
+          grep -q "__" tofu/uffis.tfvars && { echo "::error::unsubstituted token in tofu/uffis.tfvars"; exit 1; } || true
+
       - name: Preflight
         run: |
           set -euo pipefail
-          if grep -rn REPLACE_ tofu/ ; then
-            echo "::error::unresolved REPLACE_ placeholders in tofu/"; exit 1
-          fi
           for v in portal_domain_aliases; do
             grep -q "variable \"$v\"" iac/tofu/variables.tf || {
               echo "::error::iac module at this ref does not declare $v; the tfvars value would be silently dropped"

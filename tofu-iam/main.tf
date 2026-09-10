@@ -34,8 +34,8 @@ variable "ecr_repository" {
   default = "tethys-portal"
 }
 variable "state_bucket" {
-  type    = string
-  default = "REPLACE_STATE_BUCKET"
+  type        = string
+  description = "Tofu state bucket. Supply with TF_VAR_state_bucket so it is not committed."
 }
 
 data "aws_caller_identity" "me" {}
@@ -125,13 +125,36 @@ resource "aws_iam_role_policy_attachment" "deploy_poweruser" {
 
 data "aws_iam_policy_document" "deploy_iam" {
   statement {
+    sid = "ManagePortalRoles"
     actions = [
       "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:TagRole", "iam:UntagRole",
-      "iam:PassRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy",
-      "iam:ListRolePolicies", "iam:AttachRolePolicy", "iam:DetachRolePolicy",
+      "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy",
+      "iam:ListRolePolicies", "iam:DetachRolePolicy",
       "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
     ]
-    resources = ["arn:aws:iam::${local.account}:role/*"]
+    resources = ["arn:aws:iam::${local.account}:role/${var.github_repo}-*"]
+  }
+
+  statement {
+    sid       = "AttachOnlyTheEcsExecutionPolicy"
+    actions   = ["iam:AttachRolePolicy"]
+    resources = ["arn:aws:iam::${local.account}:role/${var.github_repo}-*"]
+    condition {
+      test     = "ArnEquals"
+      variable = "iam:PolicyARN"
+      values   = ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"]
+    }
+  }
+
+  statement {
+    sid       = "PassPortalRolesToEcsOnly"
+    actions   = ["iam:PassRole"]
+    resources = ["arn:aws:iam::${local.account}:role/${var.github_repo}-*"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["ecs-tasks.amazonaws.com"]
+    }
   }
 }
 
