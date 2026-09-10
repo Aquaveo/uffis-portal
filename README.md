@@ -4,7 +4,7 @@ Multi tenant [Tethys Platform](https://www.tethysplatform.org/) portal for UFFIS
 Fargate with RDS Postgres.
 
 Tenants are isolated by Postgres schema (`django-tenants`) and routed by hostname. The portal is
-served at `uhm.uffis.org` and each tenant at `<tenant>.uhm.uffis.org`, all from one Fargate service
+served at `uffis.org` and each tenant at `<tenant>.uffis.org`, all from one Fargate service
 behind one CloudFront distribution.
 
 The image builds FROM the shared [`tethys-uvx`](https://github.com/Aquaveo/tethys-uvx) base. The
@@ -34,8 +34,8 @@ Nothing in `tethys-uvx` is modified. Everything runs through the base image exte
 
 The wildcard host lives in `conf/portal_config.yml` directly. The base **appends** to
 `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` rather than replacing them, so the declared
-`.uhm.uffis.org` and `https://*.uhm.uffis.org` survive its render. Note the three spellings: the
-CloudFront alias in the tfvars is `*.uhm.uffis.org`, Django's host wildcard needs the leading dot,
+`.uffis.org` and `https://*.uffis.org` survive its render. Note the three spellings: the
+CloudFront alias in the tfvars is `*.uffis.org`, Django's host wildcard needs the leading dot,
 and Django's CSRF origin needs the scheme and the asterisk.
 
 `conf/portal-config.d/05-tenancy.sh` covers the two things config cannot:
@@ -151,8 +151,8 @@ is in the UFFIS account. Those may be two different accounts.
 
 ```bash
 aws acm request-certificate --region us-east-1 \
-  --domain-name uhm.uffis.org \
-  --subject-alternative-names '*.uhm.uffis.org' \
+  --domain-name uffis.org \
+  --subject-alternative-names '*.uffis.org' \
   --validation-method DNS \
   --query CertificateArn --output text
 
@@ -273,8 +273,8 @@ Create two records in `uffis.org`, both A and AAAA alias records to the CloudFro
 (hosted zone ID `Z2FDTNDATAQYW2`):
 
 ```
-uhm.uffis.org
-*.uhm.uffis.org
+uffis.org
+*.uffis.org
 ```
 
 Use alias records rather than CNAME. Because of the wildcard, adding a tenant later needs no DNS
@@ -288,7 +288,15 @@ The schema name and the hostname follow different rules. Postgres allows undersc
 identifier, hostnames do not, and Django validates the Host header against a regex with no
 underscore in it, so an underscored subdomain raises DisallowedHost before ALLOWED_HOSTS is
 consulted and tenancy turns that into a 404. Give the schema an underscore and the domain a hyphen.
-The launch tenant is schema `antigua_barbuda` on `antigua-barbuda.uhm.uffis.org`.
+Tenants are one label under the apex, so a tenant subdomain is covered by the `*.uffis.org`
+certificate and needs no new certificate. A two label name such as
+`antigua-barbuda.uhm.uffis.org` is **not** covered by that wildcard, which is why the original
+layout was abandoned. Tenants: `abms` on `abms.uffis.org` for Antigua and Barbuda, `uhm` on
+`uhm.uffis.org` for Haiti.
+
+The apex cannot be a CNAME, DNS forbids it alongside the zone's NS and SOA records. Use a Route 53
+A record with Alias enabled, targeting the CloudFront distribution; the CloudFront hosted zone id
+is the fixed `Z2FDTNDATAQYW2`.
 
 Two things make the obvious form of these commands fail silently. A `containerOverrides` command
 replaces the container command, so `portal-config.sh` never runs and the tenancy guard rejects the
@@ -315,11 +323,11 @@ run_provision () {
 }
 
 run_provision "/usr/local/bin/portal-config.sh && tethys manage create_tenant \
-  --schema_name antigua_barbuda --name 'Antigua and Barbuda' \
-  --domain-domain antigua-barbuda.uhm.uffis.org --domain-is_primary True"
+  --schema_name abms --name 'Antigua and Barbuda' \
+  --domain-domain abms.uffis.org --domain-is_primary True"
 
 run_provision "/usr/local/bin/portal-config.sh && DJANGO_SUPERUSER_PASSWORD='<pw>' \
-  tethys manage create_tenant_superuser --schema antigua_barbuda \
+  tethys manage create_tenant_superuser --schema abms \
   --no-input --username admin --email '<addr>'"
 ```
 
@@ -373,9 +381,9 @@ means to write for a tenant has to enter `schema_context` itself.
 ### 10. Verify
 
 ```bash
-curl -sSI https://uhm.uffis.org/
-curl -sSI https://antigua-barbuda.uhm.uffis.org/
-curl -sSI https://nope.uhm.uffis.org/
+curl -sSI https://uffis.org/
+curl -sSI https://abms.uffis.org/
+curl -sSI https://nope.uffis.org/
 ```
 
 Expect 200, 200, 200. `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is true, so an unregistered subdomain serves
@@ -434,12 +442,12 @@ URL escape hatch; only `brand_image` accepts a full URL. Static is shared across
 and these are public assets, so a tenant prefix inside it is enough.
 
 ```bash
-aws s3 cp branding/antigua_barbuda/ s3://uffis-portal-static/static/tenants/antigua_barbuda/ \
+aws s3 cp branding/abms/ s3://uffis-portal-static/static/tenants/abms/ \
   --recursive --content-type image/png
 ```
 
 The settings then reference the path relative to static, for example
-`tenants/antigua_barbuda/nods_crest.png`. `collectstatic` does not delete unknown keys, so uploads
+`tenants/abms/nods_crest.png`. `collectstatic` does not delete unknown keys, so uploads
 survive later deploys.
 
 Third party imagery is not reused. The NODS site's feature photographs are licensed stock and one
