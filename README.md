@@ -442,12 +442,12 @@ URL escape hatch; only `brand_image` accepts a full URL. Static is shared across
 and these are public assets, so a tenant prefix inside it is enough.
 
 ```bash
-aws s3 cp branding/antigua_barbuda/ s3://uffis-portal-static/static/tenants/antigua_barbuda/ \
+aws s3 cp branding/abms/ s3://uffis-portal-static/static/tenants/abms/ \
   --recursive --content-type image/png
 ```
 
 The settings then reference the path relative to static, for example
-`tenants/antigua_barbuda/nods_crest.png`. `collectstatic` does not delete unknown keys, so uploads
+`tenants/abms/nods_crest.png`. `collectstatic` does not delete unknown keys, so uploads
 survive later deploys.
 
 Third party imagery is not reused. The NODS site's feature photographs are licensed stock and one
