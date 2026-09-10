@@ -1,0 +1,6 @@
+vpc_id     = "__VPC_ID__"
+subnet_ids = __PRIVATE_SUBNET_IDS__
+
+instance_class    = "db.t4g.micro"
+allocated_storage = 50
+engine_version    = "17"
