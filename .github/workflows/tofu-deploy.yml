@@ -14,9 +14,9 @@ on:
         required: true
         type: string
       iac_ref:
-        description: "Aquaveo/tethys-ecs-iac ref. Pinned so the module cannot move between a reviewed plan and an apply."
+        description: "Aquaveo/tethys-ecs-iac ref. Must be a full 40 character sha, checkout cannot resolve a short one."
         required: false
-        default: fcf7077
+        default: fcf7077937d59df34b04f86f3d1e113081e4e216
         type: string
 
 permissions:
