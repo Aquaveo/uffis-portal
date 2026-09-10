@@ -262,6 +262,12 @@ change at all.
 
 The public tenant is registered automatically during provisioning. Each real tenant is created once.
 
+The schema name and the hostname follow different rules. Postgres allows underscores in an
+identifier, hostnames do not, and Django validates the Host header against a regex with no
+underscore in it, so an underscored subdomain raises DisallowedHost before ALLOWED_HOSTS is
+consulted and tenancy turns that into a 404. Give the schema an underscore and the domain a hyphen.
+The launch tenant is schema `antigua_barbuda` on `antigua-barbuda.uhm.uffis.org`.
+
 Two things make the obvious form of these commands fail silently. A `containerOverrides` command
 replaces the container command, so `portal-config.sh` never runs and the tenancy guard rejects the
 call. And `create_tenant_superuser` wraps Django's interactive `createsuperuser`, which prints
@@ -287,11 +293,11 @@ run_provision () {
 }
 
 run_provision "/usr/local/bin/portal-config.sh && tethys manage create_tenant \
-  --schema_name <tenant> --name '<Tenant Name>' \
-  --domain-domain <tenant>.uhm.uffis.org --domain-is_primary True"
+  --schema_name antigua_barbuda --name 'Antigua and Barbuda' \
+  --domain-domain antigua-barbuda.uhm.uffis.org --domain-is_primary True"
 
 run_provision "/usr/local/bin/portal-config.sh && DJANGO_SUPERUSER_PASSWORD='<pw>' \
-  tethys manage create_tenant_superuser --schema <tenant> \
+  tethys manage create_tenant_superuser --schema antigua_barbuda \
   --no-input --username admin --email '<addr>'"
 ```
 
@@ -305,7 +311,7 @@ workflow (or `provision.sh`) after creating tenants.
 
 ```bash
 curl -sSI https://uhm.uffis.org/
-curl -sSI https://<tenant>.uhm.uffis.org/
+curl -sSI https://antigua-barbuda.uhm.uffis.org/
 curl -sSI https://nope.uhm.uffis.org/
 ```
 
