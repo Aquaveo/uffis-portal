@@ -123,7 +123,7 @@ jobs:
             --started-by "ci-provision" --query 'tasks[0].taskArn' --output text)
           [ -n "$TASK" ] && [ "$TASK" != "None" ] || { echo "::error::run-task returned no task ARN"; exit 1; }
           echo "provision task: $TASK"
-          DEADLINE=$(( $(date +%s) + ${PROVISION_TIMEOUT:-3600} ))
+          DEADLINE=$(( $(date +%s) + ${PROVISION_TIMEOUT:-1800} ))
           while [ "$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" \
                       --query 'tasks[0].lastStatus' --output text)" != "STOPPED" ]; do
             if [ "$(date +%s)" -gt "$DEADLINE" ]; then
