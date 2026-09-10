@@ -412,9 +412,16 @@ PostGIS database.
 ## Plugins
 
 `tgf_wmo_plugins` is installed in the builder stage, pinned to a commit, and exposes six
-`intake.drivers` entry points that tethysdash discovers. It ships no `static` directory, and
-tethysdash's `collect_plugin_static.py` calls `os.listdir` on one without checking, so the image
-creates an empty one. Removing that line breaks provisioning with `FileNotFoundError`.
+`intake.drivers` entry points that tethysdash discovers. It ships no `static` directory. That used
+to break provisioning, because tethysdash called `os.listdir` on one without checking; fixed
+upstream in `tethysapp-tethys_dash` #183 and the local workaround is gone. tethysdash is cloned
+from its default branch unpinned, so the fix is present. Pinning tethysdash to a release older than
+that fix brings the `FileNotFoundError` back.
+
+When rebuilding locally to pick up a tethysdash change, bust both stages:
+`docker build --no-cache-filter builder,runtime`. Busting only `builder` leaves the runtime stage's
+`COPY --from=builder` cached, so the image keeps the old tethysdash and looks like the fix did not
+land.
 
 Four of the six get a thumbnail; the two `impact_layer` drivers report no PNG available and are
 skipped from static collection. They are still registered and usable, they just have no icon.

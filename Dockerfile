@@ -29,8 +29,7 @@ RUN git clone --depth 1 https://github.com/tethysplatform/tethysapp-tethys_dash.
 
 ARG WMO_PLUGINS_REF=dd43c1fc271015f4e17495d89a7c3000a6e23a08
 RUN uv pip install --no-cache \
-      "tgf-wmo-plugins @ git+https://github.com/Aquaveo/tgf_wmo_plugins.git@${WMO_PLUGINS_REF}" \
-  && mkdir -p "$(python -c 'import tgf_wmo_plugins,os;print(os.path.dirname(tgf_wmo_plugins.__file__))')/static"
+      "tgf-wmo-plugins @ git+https://github.com/Aquaveo/tgf_wmo_plugins.git@${WMO_PLUGINS_REF}"
 
 RUN chmod -R a+rX /opt/python /opt/conda \
   && chmod -R a+rwX /opt/conda/envs/tethys/lib/python3.12/site-packages/tethysapp/tethysdash
