@@ -360,6 +360,12 @@ boundary. Media is written by tenant users, so it is prefixed with the tenant sc
 `TenantMediaS3Storage`, which overrides `_normalize_name`, the one seam `_open`, `_save`, `delete`,
 `exists`, `listdir`, `size` and `url` all pass through on django-storages 1.14.6.
 
+Test store changes against a non superuser database owner. A stock Postgres container makes
+`POSTGRES_USER` a superuser, which bypasses the membership check that `CREATE SCHEMA ...
+AUTHORIZATION` needs, so a provisioner that works locally can still fail on a managed instance with
+`must be able to SET ROLE`. Create the role with `createdb createrole` and no superuser bit, and own
+the portal database with it, to match what RDS gives you.
+
 Outside a request django_tenants leaves the connection on the public schema, so a management
 command writes under `media/portal_public/`. That cannot reach a tenant's files, but a job that
 means to write for a tenant has to enter `schema_context` itself.
