@@ -455,12 +455,12 @@ aws s3 cp branding/abms/ s3://uffis-portal-static/static/tenants/abms/ \
 ```
 
 The settings then reference the path relative to static, for example
-`tenants/abms/nods_crest.png`. `collectstatic` does not delete unknown keys, so uploads
+`tenants/abms/abms_logo.png`. `collectstatic` does not delete unknown keys, so uploads
 survive later deploys.
 
-Third party imagery is not reused. The NODS site's feature photographs are licensed stock and one
-carries the Red Cross emblem, which is protected under the Geneva Conventions, so the feature
-images here are original artwork in the same palette.
+Third party imagery is not reused beyond an agency's own mark. A partner site's photographs are
+usually licensed stock, and emblems such as the Red Cross are protected independently of copyright,
+so only the institution's own logo is rehosted and anything else is original work.
 
 ## Known limits
 
