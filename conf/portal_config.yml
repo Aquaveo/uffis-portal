@@ -52,6 +52,8 @@ settings:
     default:
       BACKEND: channels.layers.InMemoryChannelLayer
   TETHYS_PORTAL_CONFIG:
+    ADDITIONAL_TEMPLATE_DIRS:
+      - portal_templates
     ENABLE_OPEN_PORTAL: false
     BYPASS_TETHYS_HOME_PAGE: false
 
