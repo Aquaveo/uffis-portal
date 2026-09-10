@@ -419,6 +419,26 @@ creates an empty one. Removing that line breaks provisioning with `FileNotFoundE
 Four of the six get a thumbnail; the two `impact_layer` drivers report no PNG available and are
 skipped from static collection. They are still registered and usable, they just have no icon.
 
+## Tenant branding
+
+`branding/<schema>/` holds a tenant's brand assets. They are served from the shared static bucket,
+not from media, because Tethys renders `feature_N_image` through `{% static %}` with no absolute
+URL escape hatch; only `brand_image` accepts a full URL. Static is shared across tenants by design
+and these are public assets, so a tenant prefix inside it is enough.
+
+```bash
+aws s3 cp branding/antigua_barbuda/ s3://uffis-portal-static/static/tenants/antigua_barbuda/ \
+  --recursive --content-type image/png
+```
+
+The settings then reference the path relative to static, for example
+`tenants/antigua_barbuda/nods_crest.png`. `collectstatic` does not delete unknown keys, so uploads
+survive later deploys.
+
+Third party imagery is not reused. The NODS site's feature photographs are licensed stock and one
+carries the Red Cross emblem, which is protected under the Geneva Conventions, so the feature
+images here are original artwork in the same palette.
+
 ## Known limits
 
 Media is not isolated per tenant. All tenants share one S3 bucket and one `media/` prefix served
