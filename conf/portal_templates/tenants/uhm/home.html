@@ -4,15 +4,12 @@
 {% block capabilities_heading %}Ce que fait ce portail{% endblock %}
 {% block open_apps_label %}Ouvrir les outils{% endblock %}
 {% block login_label %}Se connecter{% endblock %}
+{% block partners_label %}En partenariat avec{% endblock %}
 
-{% block partners %}
-<div class="u-partners">
-  <div class="u-partners-inner">
-    <p class="u-partners-label">En partenariat avec</p>
-    <a href="https://www.meteo-haiti.gouv.ht" rel="noopener">Unité Hydrométéorologique d'Haïti</a>
-    <span>University of Iowa</span>
-    <span>Tethys Geoscience Foundation</span>
-    <span>Sous l'égide de l'Organisation météorologique mondiale</span>
-  </div>
-</div>
+{% block agency_mark %}
+  <li>
+    <a href="https://www.meteo-haiti.gouv.ht" rel="noopener" class="u-partner-text">
+      Unité Hydrométéorologique d'Haïti
+    </a>
+  </li>
 {% endblock %}
