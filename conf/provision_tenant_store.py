@@ -84,10 +84,17 @@ def store_databases(schema_name):
 
 
 def ensure_role(conn, role, password):
-    """Create the tenant's login role, or reset its password when it already exists."""
+    """Create the tenant's login role, or reset its password when it already exists.
+
+    The admin is granted membership of the new role because creating a schema owned by another role
+    requires being able to SET ROLE to it. A local Postgres hides this: the container's POSTGRES_USER
+    is a superuser and bypasses the check, while a managed instance gives you a privileged but non
+    superuser master that fails with "must be able to SET ROLE".
+    """
     exists = conn.execute(f"select 1 from pg_roles where rolname = '{role}'").first()
     verb = "alter" if exists else "create"
     conn.execute(f"{verb} role {quote(role)} with login password '{password}'")
+    conn.execute(f"grant {quote(role)} to {quote(ADMIN['user'])}")
     return verb
 
 
