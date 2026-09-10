@@ -123,22 +123,66 @@ resource "aws_iam_role_policy_attachment" "deploy_poweruser" {
   policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
 }
 
+data "aws_iam_policy_document" "ci_boundary" {
+  statement {
+    effect      = "Allow"
+    not_actions = ["iam:*", "organizations:*", "account:*", "sts:AssumeRole"]
+    resources   = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "ci_boundary" {
+  name        = "${var.github_repo}-ci-boundary"
+  description = "Ceiling for roles the deploy role creates. Denies IAM, Organizations, account and AssumeRole."
+  policy      = data.aws_iam_policy_document.ci_boundary.json
+}
+
+locals {
+  managed_roles = [
+    "arn:aws:iam::${local.account}:role/${var.github_repo}-exec",
+    "arn:aws:iam::${local.account}:role/${var.github_repo}-task",
+  ]
+}
+
 data "aws_iam_policy_document" "deploy_iam" {
   statement {
-    sid = "ManagePortalRoles"
-    actions = [
-      "iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:TagRole", "iam:UntagRole",
-      "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy",
-      "iam:ListRolePolicies", "iam:DetachRolePolicy",
-      "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
-    ]
+    sid       = "ReadPortalRoles"
+    actions   = ["iam:GetRole", "iam:GetRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole"]
     resources = ["arn:aws:iam::${local.account}:role/${var.github_repo}-*"]
+  }
+
+  statement {
+    sid       = "CreatePortalRolesUnderBoundary"
+    actions   = ["iam:CreateRole"]
+    resources = local.managed_roles
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PermissionsBoundary"
+      values   = [aws_iam_policy.ci_boundary.arn]
+    }
+  }
+
+  statement {
+    sid       = "SetTheBoundaryOnPortalRoles"
+    actions   = ["iam:PutRolePermissionsBoundary"]
+    resources = local.managed_roles
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PermissionsBoundary"
+      values   = [aws_iam_policy.ci_boundary.arn]
+    }
+  }
+
+  statement {
+    sid       = "ManageBoundedPortalRoles"
+    actions   = ["iam:DeleteRole", "iam:TagRole", "iam:UntagRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:DetachRolePolicy"]
+    resources = local.managed_roles
   }
 
   statement {
     sid       = "AttachOnlyTheEcsExecutionPolicy"
     actions   = ["iam:AttachRolePolicy"]
-    resources = ["arn:aws:iam::${local.account}:role/${var.github_repo}-*"]
+    resources = local.managed_roles
     condition {
       test     = "ArnEquals"
       variable = "iam:PolicyARN"
@@ -149,7 +193,7 @@ data "aws_iam_policy_document" "deploy_iam" {
   statement {
     sid       = "PassPortalRolesToEcsOnly"
     actions   = ["iam:PassRole"]
-    resources = ["arn:aws:iam::${local.account}:role/${var.github_repo}-*"]
+    resources = local.managed_roles
     condition {
       test     = "StringEquals"
       variable = "iam:PassedToService"
@@ -190,6 +234,10 @@ resource "aws_iam_role_policy" "deploy_state" {
   policy = data.aws_iam_policy_document.deploy_state.json
 }
 
+output "ci_boundary_arn" {
+  description = "Pass as iam_permissions_boundary in the portal tfvars."
+  value       = aws_iam_policy.ci_boundary.arn
+}
 output "ecr_role_arn" {
   description = "Set as the GitHub repo secret AWS_ROLE_ARN (build.yml)."
   value       = aws_iam_role.ecr.arn
