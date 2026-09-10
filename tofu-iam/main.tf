@@ -25,6 +25,15 @@ variable "github_org" {
   type    = string
   default = "Aquaveo"
 }
+variable "github_org_id" {
+  type        = number
+  description = "GitHub sends the org and repo immutable ids in the OIDC sub claim. Pinning them survives a rename and stops a deleted and recreated repo of the same name from assuming these roles. No default, so a missing value fails the plan rather than silently trusting the wrong subject."
+}
+
+variable "github_repo_id" {
+  type = number
+}
+
 variable "github_repo" {
   type    = string
   default = "uffis-portal"
@@ -61,8 +70,8 @@ data "aws_iam_policy_document" "assume_ecr" {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/main",
-        "repo:${var.github_org}/${var.github_repo}:ref:refs/tags/*",
+        "repo:${local.gh_repo}:ref:refs/heads/main",
+        "repo:${local.gh_repo}:ref:refs/tags/*",
       ]
     }
   }
@@ -83,7 +92,7 @@ data "aws_iam_policy_document" "assume_deploy" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_org}/${var.github_repo}:environment:production"]
+      values   = ["repo:${local.gh_repo}:environment:production"]
     }
   }
 }
@@ -138,6 +147,8 @@ resource "aws_iam_policy" "ci_boundary" {
 }
 
 locals {
+  gh_repo = "${var.github_org}@${var.github_org_id}/${var.github_repo}@${var.github_repo_id}"
+
   managed_roles = [
     "arn:aws:iam::${local.account}:role/${var.github_repo}-exec",
     "arn:aws:iam::${local.account}:role/${var.github_repo}-task",

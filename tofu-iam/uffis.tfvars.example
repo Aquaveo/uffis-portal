@@ -1,0 +1,3 @@
+state_bucket   = "__STATE_BUCKET__"
+github_org_id  = __GITHUB_ORG_ID__
+github_repo_id = __GITHUB_REPO_ID__
