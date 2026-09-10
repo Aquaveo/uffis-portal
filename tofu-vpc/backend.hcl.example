@@ -1,0 +1,3 @@
+bucket = "__STATE_BUCKET__"
+region = "us-east-1"
+key    = "portals/uffis-portal-vpc.tfstate"
