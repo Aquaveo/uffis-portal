@@ -10,9 +10,9 @@ on:
         type: choice
         options: [plan, apply]
       iac_ref:
-        description: "Aquaveo/tethys-ecs-iac ref (branch/tag to pin)"
+        description: "Aquaveo/tethys-ecs-iac ref. Pinned so the module cannot move between a reviewed plan and an apply."
         required: false
-        default: main
+        default: 7047a1a
         type: string
 
 permissions:

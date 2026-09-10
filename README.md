@@ -299,6 +299,10 @@ tolerating 404 at the load balancer would make a misconfigured portal look healt
 New image: push to `main`, then bump `image_uri` in `tofu/uffis.tfvars` and run the tofu deploy
 workflow with `plan`, review, then `apply`.
 
+Module change: the deploy workflow pins `iac_ref` to a `tethys-ecs-iac` commit so the module cannot
+move between a reviewed plan and an apply. Bump that default deliberately, the same way the
+Dockerfile's base image tags are bumped.
+
 Rotate a secret: update the GitHub secret and run the sync secrets workflow.
 
 Base image change: after the `tethys-uvx` CI publishes, bump `BASE_BUILDER` and `BASE_TAG` in the
