@@ -329,7 +329,31 @@ migration failed.
 A new tenant's app registry stays empty until the harvest hook runs again, so re-run the tofu deploy
 workflow (or `provision.sh`) after creating tenants.
 
-### 9. Verify
+### 9. Persistent stores
+
+Tethys names a store database after the app package and the setting only, so every tenant resolves
+to the same database and the name cannot carry the tenant. The service row is per tenant but only
+carries host, port, username and password, and neither `get_url` nor `get_engine` accepts
+connection options, so the connecting Postgres role is the only place isolation can live.
+
+`conf/provision_tenant_store.py` gives each tenant a role, a schema inside the store database, and a
+`search_path` default set with `IN DATABASE`. It runs from the provision hook, before
+`all_tenants_command syncstores`.
+
+Two things make the obvious version of this silently wrong. A cluster wide `ALTER ROLE ... SET
+search_path` names a schema that does not exist in the store database, and Postgres then falls back
+to `public` with no error, so tenants share rows while looking isolated. And `SHOW search_path`
+reports the setting rather than the resolved schema, so it agrees with you either way. The hook
+asserts on `current_schema()` instead and fails the provision when it does not match.
+
+The public tenant gets `portal_public`, not `public`. The `public` schema is the fallback Postgres
+uses when a `search_path` entry is missing, so pointing the public tenant at it would mean a
+misprovisioned tenant lands in real data rather than an empty schema.
+
+`syncstores` exits 0 even when it fails, because `tethys manage` discards the subprocess return, so
+the hook greps its output and fails the provision on any error line.
+
+### 10. Verify
 
 ```bash
 curl -sSI https://uhm.uffis.org/
