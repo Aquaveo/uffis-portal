@@ -9,7 +9,7 @@ django.setup()
 
 from django_tenants.utils import get_tenant_domain_model, get_tenant_model  # noqa: E402
 
-PORTAL_DOMAIN = "uhm.uffis.org"
+PORTAL_DOMAIN = "uffis.org"
 
 
 def public_hostnames():
