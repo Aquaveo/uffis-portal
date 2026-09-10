@@ -21,8 +21,8 @@ conf/portal-config.d/             config hooks, run by the base portal-config.sh
 conf/init.d/                      provisioning hooks, run by the base provision.sh once per release
 conf/register_tenants.py          creates the public tenant and its domain rows
 conf/portal_storage.py            S3 static storage backend
-tofu/uffis.tfvars                 infrastructure inputs for the tethys-ecs-iac module
-tofu/backend.hcl                  tofu state location, key portals/uffis-portal.tfstate
+tofu/uffis.tfvars.example         infrastructure inputs, tokenized; the real file is gitignored
+tofu/backend.hcl.example          tofu state location, tokenized
 tofu-rds/                         the Postgres instance, applied once with admin credentials
 tofu-iam/                         OIDC CI roles, applied once with admin credentials
 .github/workflows/                build (image to ECR), tofu deploy, sync secrets to SSM
@@ -77,8 +77,28 @@ a different tenant's data.
 
 ## One time setup
 
-Values marked `REPLACE_` in `tofu/uffis.tfvars`, `tofu/backend.hcl`, and `tofu-iam/backend.hcl` must
-be filled in before anything will apply.
+**No account identifiers are committed.** `tofu/uffis.tfvars` and the three `backend.hcl` files are
+gitignored; the repo carries `.example` versions with `__TOKEN__` placeholders. The deploy workflow
+renders the real files from repository variables at run time, and the lint workflow fails if an
+account id, VPC or subnet ever lands in a tracked file.
+
+For local work, copy each example and substitute:
+
+```bash
+sed "s/__STATE_BUCKET__/<bucket>/" tofu/backend.hcl.example > tofu/backend.hcl
+```
+
+Set these repository variables before the first deploy (Settings, Secrets and variables, Actions):
+`AWS_REGION`, `ECR_REPOSITORY`, `TOFU_STATE_BUCKET`, `AWS_ACCOUNT_ID`, `VPC_ID`, `SUBNET_IDS`,
+`ACM_CERTIFICATE_ARN`, `DB_HOST`, `PORTAL_DOMAIN`. `SUBNET_IDS` is a JSON array, for example
+`["subnet-aaa", "subnet-bbb"]`.
+
+The image tag is a workflow input rather than a committed value, so deploying a new build no longer
+means editing and committing a tfvars file.
+
+Two prerequisites need IAM permissions that `AWSPowerUserAccess` does not grant, so they need an
+administrator: the GitHub OIDC identity provider (`iam:CreateOpenIDConnectProvider`), and the
+`tofu-iam` apply, which creates the CI roles. Nothing in the CI path works until both exist.
 
 ### 1. Credentials
 
