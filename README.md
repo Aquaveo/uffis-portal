@@ -173,14 +173,25 @@ Put the ARN in `tofu/uffis.tfvars` as `acm_certificate_arn`.
 
 ```bash
 cd tofu-iam
+cp backend.hcl.example backend.hcl
+cp uffis.tfvars.example uffis.tfvars
+sed -i "s|__STATE_BUCKET__|<bucket>|;s|__GITHUB_ORG_ID__|$(gh api orgs/Aquaveo --jq .id)|;s|__GITHUB_REPO_ID__|$(gh api repos/Aquaveo/uffis-portal --jq .id)|" uffis.tfvars
 tofu init -backend-config=backend.hcl
-tofu apply
+tofu apply -var-file=uffis.tfvars
 tofu output ecr_role_arn
 tofu output deploy_role_arn
+tofu output ci_boundary_arn
 ```
 
 Apply this once with admin credentials. It creates the role the deploy workflow assumes, so the
-deploy workflow cannot create it.
+deploy workflow cannot create it. `uffis.tfvars` is gitignored and the tokenised `.example` is what
+ships; the id variables carry no default, so a missing value fails the plan rather than quietly
+trusting the wrong OIDC subject.
+
+GitHub puts the org and repo immutable ids in the OIDC subject claim, so the trusted subject is
+`Aquaveo@<org id>/uffis-portal@<repo id>`, not the plain name. A trust policy written the name only
+way is refused with `Not authorized to perform sts:AssumeRoleWithWebIdentity`, and the build then
+fails before it reaches Docker.
 
 The two roles trust different OIDC subjects. The ECR push role accepts `refs/heads/main` and version
 tags. The deploy role accepts only `environment:production`, so **create a GitHub Environment named
