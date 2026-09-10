@@ -409,6 +409,16 @@ Apps with persistent stores need care. The persistent store database name is der
 package and the store name with no tenant component, so two tenants running the same app share one
 PostGIS database.
 
+## Plugins
+
+`tgf_wmo_plugins` is installed in the builder stage, pinned to a commit, and exposes six
+`intake.drivers` entry points that tethysdash discovers. It ships no `static` directory, and
+tethysdash's `collect_plugin_static.py` calls `os.listdir` on one without checking, so the image
+creates an empty one. Removing that line breaks provisioning with `FileNotFoundError`.
+
+Four of the six get a thumbnail; the two `impact_layer` drivers report no PNG available and are
+skipped from static collection. They are still registered and usable, they just have no icon.
+
 ## Known limits
 
 Media is not isolated per tenant. All tenants share one S3 bucket and one `media/` prefix served
