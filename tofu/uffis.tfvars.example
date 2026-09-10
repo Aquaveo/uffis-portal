@@ -8,6 +8,8 @@ alb_subnets     = __SUBNET_IDS__
 service_subnets = __SUBNET_IDS__
 
 static_bucket_name    = "uffis-portal-static"
+iam_permissions_boundary = "arn:aws:iam::__ACCOUNT_ID__:policy/uffis-portal-ci-boundary"
+
 portal_domain         = "__PORTAL_DOMAIN__"
 portal_domain_aliases = ["*.__PORTAL_DOMAIN__"]
 acm_certificate_arn   = "__ACM_ARN__"

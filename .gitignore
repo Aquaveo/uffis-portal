@@ -12,3 +12,5 @@ tofu/uffis.tfvars
 tofu/backend.hcl
 tofu-iam/backend.hcl
 tofu-rds/backend.hcl
+tofu-vpc/backend.hcl
+tofu-rds/uffis.tfvars

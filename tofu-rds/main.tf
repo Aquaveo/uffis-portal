@@ -38,7 +38,7 @@ variable "subnet_ids" {
 
 variable "instance_class" {
   type    = string
-  default = "db.t4g.medium"
+  default = "db.t4g.micro"
 }
 
 variable "engine_version" {
