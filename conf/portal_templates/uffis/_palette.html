@@ -1,0 +1,29 @@
+{% comment %}
+Palette derived from this tenant's site settings, so one template themes every tenant.
+Brand colours arrive as hex from Site Settings; every derived tone is mixed in OKLCH so tints stay
+even across hues instead of muddying the way sRGB mixing does. Neutrals are tinted toward the brand
+rather than pure black or white.
+{% endcomment %}
+<style id="uffis-palette">
+  :root {
+    --brand: {{ site_globals.primary_color|default:"#003366" }};
+    --brand-deep: {{ site_globals.secondary_color|default:"#333366" }};
+    --on-brand: {{ site_globals.primary_text_color|default:"#ffffff" }};
+    --accent: {{ site_globals.primary_text_hover_color|default:"#ffbf00" }};
+
+    --ink: color-mix(in oklch, var(--brand) 22%, #12161a);
+    --muted: color-mix(in oklch, var(--brand) 16%, #5a6672);
+    --surface: color-mix(in oklch, var(--brand) 2%, #fdfdfc);
+    --page: color-mix(in oklch, var(--brand) 5%, #f7f8f9);
+    --line: color-mix(in oklch, var(--brand) 12%, #dfe3e7);
+    --brand-wash: color-mix(in oklch, var(--brand) 8%, transparent);
+
+    --step-0: 1rem;
+    --step-1: 1.32rem;
+    --step-2: 1.75rem;
+    --step-3: clamp(1.9rem, 3.2vw, 2.6rem);
+    --step-4: clamp(2.3rem, 5vw, 3.6rem);
+
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+</style>

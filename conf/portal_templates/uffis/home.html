@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static tethys %}
+
+{% block title %}{{ block.super }}{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+  {% include "uffis/_palette.html" %}
+  <style id="uffis-home">
+    body { background: var(--page); color: var(--ink); -webkit-font-smoothing: antialiased; }
+    .site-header #header-navbar { background-color: var(--brand) !important; }
+    .site-footer { background-color: var(--brand); }
+
+    .u-hero {
+      position: relative;
+      margin-top: -206px;
+      padding: 250px 1.5rem 5.5rem;
+      background:
+        radial-gradient(1100px 520px at 78% 6%, color-mix(in oklch, var(--accent) 22%, transparent) 0%, transparent 60%),
+        linear-gradient(158deg, var(--brand) 0%, var(--brand-deep) 100%);
+      color: var(--on-brand);
+    }
+    .u-hero-inner { max-width: 68rem; margin: 0 auto; }
+    .u-agency {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 2.25rem; padding-bottom: 1.5rem;
+      border-bottom: 1px solid color-mix(in oklch, var(--on-brand) 28%, transparent);
+    }
+    .u-agency img { width: 68px; height: 68px; object-fit: contain; }
+    .u-agency-name { margin: 0; font-size: var(--step-0); font-weight: 700; letter-spacing: .01em; }
+    .u-agency-sub { margin: .15rem 0 0; font-size: .87rem; opacity: .78; }
+
+    .u-hero h1 {
+      max-width: 22ch; margin: 0 0 1.15rem;
+      font-size: var(--step-4); font-weight: 700; line-height: 1.08; letter-spacing: -.02em;
+      text-wrap: balance;
+    }
+    .u-hero p.lead { max-width: 68ch; margin: 0; font-size: var(--step-1); line-height: 1.6; opacity: .9; }
+
+    .u-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2.5rem; }
+    .u-btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .78rem 1.5rem; border-radius: 4px;
+      font-weight: 650; text-decoration: none;
+      transition: background-color .25s var(--ease), color .25s var(--ease), border-color .25s var(--ease);
+    }
+    .u-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .u-btn-solid { background: var(--accent); border: 1px solid var(--accent); color: var(--ink); }
+    .u-btn-solid:hover { background: color-mix(in oklch, var(--accent) 82%, var(--ink)); color: var(--ink); }
+    .u-btn-line { background: transparent; border: 1px solid color-mix(in oklch, var(--on-brand) 55%, transparent); color: var(--on-brand); }
+    .u-btn-line:hover { background: color-mix(in oklch, var(--on-brand) 14%, transparent); color: var(--on-brand); }
+
+    .u-capabilities { max-width: 68rem; margin: 0 auto; padding: clamp(3.5rem, 7vw, 6rem) 1.5rem; }
+    .u-cap-grid { display: grid; gap: clamp(2rem, 5vw, 4.5rem); }
+    @media (min-width: 62rem) { .u-cap-grid { grid-template-columns: 16rem 1fr; } }
+    .u-cap-heading h2 {
+      position: sticky; top: 6rem; margin: 0;
+      font-size: var(--step-2); font-weight: 700; line-height: 1.2; letter-spacing: -.01em;
+    }
+    .u-cap-list { margin: 0; padding: 0; list-style: none; counter-reset: cap; }
+    .u-cap {
+      display: grid; gap: .35rem 1.4rem; padding: 2rem 0;
+      border-top: 1px solid var(--line); counter-increment: cap;
+    }
+    .u-cap:first-child { border-top: 0; padding-top: 0; }
+    @media (min-width: 40rem) { .u-cap { grid-template-columns: 4.5rem 1fr; } }
+    .u-cap-num {
+      font-size: .82rem; font-weight: 700; letter-spacing: .1em;
+      color: var(--muted); font-variant-numeric: tabular-nums; padding-top: .3rem;
+    }
+    .u-cap-num::before { content: counter(cap, decimal-leading-zero); }
+    .u-cap h3 { margin: 0 0 .45rem; font-size: var(--step-1); font-weight: 650; line-height: 1.3; }
+    .u-cap p { margin: 0; max-width: 62ch; color: var(--muted); font-size: var(--step-0); line-height: 1.65; }
+    .u-cap img { width: 44px; height: 44px; object-fit: contain; margin-bottom: .75rem; }
+
+    .u-partners { border-top: 1px solid var(--line); background: var(--surface); }
+    .u-partners-inner {
+      max-width: 68rem; margin: 0 auto; padding: 1.5rem;
+      display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 2rem;
+    }
+    .u-partners-label {
+      margin: 0; font-size: .74rem; font-weight: 700; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .u-partners a, .u-partners span { color: var(--ink); font-size: .93rem; font-weight: 600; text-decoration: none; }
+    .u-partners a:hover { color: var(--brand); text-decoration: underline; }
+
+    @media (max-width: 47.98rem) { .u-hero { padding-top: 210px; padding-bottom: 3.5rem; } }
+    @media (prefers-reduced-motion: reduce) { .u-btn { transition: none; } }
+  </style>
+{% endblock %}
+
+{% block custom_styles %}
+  {{ block.super }}
+  {{ site_globals.home_page_css|load_custom_css|safe }}
+{% endblock %}
+
+{% block content %}
+<header class="u-hero">
+  <div class="u-hero-inner">
+    {% block agency_identity %}
+      {% if site_globals.brand_image %}
+        <div class="u-agency">
+          {% if 'http' in site_globals.brand_image %}
+            <img src="{{ site_globals.brand_image }}" alt="">
+          {% else %}
+            <img src="{% static site_globals.brand_image %}" alt="">
+          {% endif %}
+          <div>
+            <p class="u-agency-name">{{ site_globals.brand_text }}</p>
+            <p class="u-agency-sub">{% block agency_tagline %}Urban Flood Forecasting Information System{% endblock %}</p>
+          </div>
+        </div>
+      {% endif %}
+    {% endblock %}
+
+    <h1>{{ site_globals.hero_text|default:"Flood forecasting for the communities you serve" }}</h1>
+    <p class="lead">{{ site_globals.blurb_text|default:"Rainfall monitoring, streamflow forecasts and impact information in one place, so forecasters and emergency managers can act before the water arrives." }}</p>
+
+    <div class="u-actions">
+      {% if show_app_library_button %}
+        <a href="{% url 'app_library' %}" class="u-btn u-btn-solid">{% block open_apps_label %}Open the tools{% endblock %}</a>
+      {% endif %}
+      {% if not user.is_authenticated %}
+        <a href="{% url 'accounts:login' %}" class="u-btn u-btn-line">{% block login_label %}Log in{% endblock %}</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<section class="u-capabilities">
+  <div class="u-cap-grid">
+    <div class="u-cap-heading">
+      <h2>{% block capabilities_heading %}What this portal does{% endblock %}</h2>
+    </div>
+    <ol class="u-cap-list">
+      <li class="u-cap">
+        <div class="u-cap-num" aria-hidden="true"></div>
+        <div>
+          <h3>{{ site_globals.feature_1_heading|default:"Forecasts and observations" }}</h3>
+          <p>{{ site_globals.feature_1_body|default:"Rainfall, streamflow and inundation forecasts for your catchments, refreshed on every model run." }}</p>
+        </div>
+      </li>
+      <li class="u-cap">
+        <div class="u-cap-num" aria-hidden="true"></div>
+        <div>
+          <h3>{{ site_globals.feature_2_heading|default:"Impact information" }}</h3>
+          <p>{{ site_globals.feature_2_body|default:"Summaries that turn a forecast into something you can brief from, with thresholds and affected areas." }}</p>
+        </div>
+      </li>
+      <li class="u-cap">
+        <div class="u-cap-num" aria-hidden="true"></div>
+        <div>
+          <h3>{{ site_globals.feature_3_heading|default:"Dashboards you control" }}</h3>
+          <p>{{ site_globals.feature_3_body|default:"Arrange the views your duty desk needs and share them with the people who act on them." }}</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+{% block partners %}
+<div class="u-partners">
+  <div class="u-partners-inner">
+    <p class="u-partners-label">A collaboration of</p>
+    <span>University of Iowa</span>
+    <span>Tethys Geoscience Foundation</span>
+    <span>Sponsored by the World Meteorological Organization</span>
+  </div>
+</div>
+{% endblock %}
+<div id="home-page" style="display: none;"></div>
+{% endblock %}
