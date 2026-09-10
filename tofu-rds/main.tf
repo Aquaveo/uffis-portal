@@ -73,23 +73,6 @@ variable "backup_retention_period" {
   default = 7
 }
 
-variable "backup_window" {
-  type        = string
-  default     = "07:00-08:00"
-  description = "UTC. Outside business hours for Honduras, which is UTC-6."
-}
-
-variable "maintenance_window" {
-  type    = string
-  default = "sun:08:00-sun:09:00"
-}
-
-variable "manual_snapshot_id" {
-  type        = string
-  default     = ""
-  description = "Take a deliberate snapshot before a risky change. Changing this value replaces the snapshot, which deletes the previous one. Empty takes none."
-}
-
 variable "deletion_protection" {
   type    = bool
   default = true
@@ -143,9 +126,6 @@ resource "aws_db_instance" "this" {
   publicly_accessible    = false
 
   backup_retention_period = var.backup_retention_period
-  backup_window           = var.backup_window
-  maintenance_window      = var.maintenance_window
-  copy_tags_to_snapshot   = true
   deletion_protection     = var.deletion_protection
 
   skip_final_snapshot       = false
@@ -155,17 +135,6 @@ resource "aws_db_instance" "this" {
   apply_immediately          = false
 
   tags = { project = var.name }
-}
-
-resource "aws_db_snapshot" "manual" {
-  count                  = var.manual_snapshot_id == "" ? 0 : 1
-  db_instance_identifier = aws_db_instance.this.identifier
-  db_snapshot_identifier = "${var.name}-db-${var.manual_snapshot_id}"
-  tags                   = { project = var.name }
-}
-
-output "manual_snapshot_arn" {
-  value = one(aws_db_snapshot.manual[*].db_snapshot_arn)
 }
 
 output "db_host" {
