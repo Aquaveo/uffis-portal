@@ -10,7 +10,7 @@ args=(
   --set STORAGES.staticfiles.OPTIONS.region_name "${AWS_REGION:-us-east-1}"
   --set STORAGES.staticfiles.OPTIONS.location "$loc"
   --set STORAGES.staticfiles.OPTIONS.querystring_auth false
-  --set STORAGES.default.BACKEND "storages.backends.s3.S3Storage"
+  --set STORAGES.default.BACKEND "portal_storage.TenantMediaS3Storage"
   --set STORAGES.default.OPTIONS.bucket_name "$STATIC_S3_BUCKET"
   --set STORAGES.default.OPTIONS.region_name "${AWS_REGION:-us-east-1}"
   --set STORAGES.default.OPTIONS.location "media"

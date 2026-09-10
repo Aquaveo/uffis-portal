@@ -353,6 +353,17 @@ misprovisioned tenant lands in real data rather than an empty schema.
 `syncstores` exits 0 even when it fails, because `tethys manage` discards the subprocess return, so
 the hook greps its output and fails the provision on any error line.
 
+Media is isolated per tenant, static is not. Every object under `static/` is a framework or app
+asset collected from an installed package, byte identical for every tenant and public read through
+CloudFront, so isolating it would duplicate it per tenant and fragment the cache without creating a
+boundary. Media is written by tenant users, so it is prefixed with the tenant schema by
+`TenantMediaS3Storage`, which overrides `_normalize_name`, the one seam `_open`, `_save`, `delete`,
+`exists`, `listdir`, `size` and `url` all pass through on django-storages 1.14.6.
+
+Outside a request django_tenants leaves the connection on the public schema, so a management
+command writes under `media/portal_public/`. That cannot reach a tenant's files, but a job that
+means to write for a tenant has to enter `schema_context` itself.
+
 ### 10. Verify
 
 ```bash
