@@ -23,6 +23,7 @@ tethys settings \
   --set EMAIL_HOST_USER "$EMAIL_HOST_USER" \
   --set EMAIL_HOST_PASSWORD "$EMAIL_HOST_PASSWORD" \
   --set DEFAULT_FROM_EMAIL "$DEFAULT_FROM_EMAIL" \
+  --set EMAIL_FROM "${EMAIL_FROM:-UFFIS Portal}" \
   --set SERVER_EMAIL "$DEFAULT_FROM_EMAIL"
 
 tethys settings -g EMAIL_BACKEND 2>/dev/null | grep -q smtp || {

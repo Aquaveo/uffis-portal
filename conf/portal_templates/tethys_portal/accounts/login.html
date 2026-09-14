@@ -1,0 +1,43 @@
+{% extends "tethys_portal/accounts/base.html" %}
+
+{% comment %}
+Shadows the stock login. The form, its validation and every auth backend stay upstream; the one
+change is that the username and password fields carry labels. LoginForm declares them with
+label="", so the stock page renders an empty <label> and the input has no accessible name at all;
+the placeholder is the only thing a screen reader can fall back to.
+{% endcomment %}
+
+{% load django_bootstrap5 tethys %}
+
+{% block title %}{{ block.super }} - Log In{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+  {{ site_globals.login_css|load_custom_css|safe }}
+{% endblock %}
+
+{% block account_form_title %}Log In{% endblock %}
+
+{% block account_form_body %}
+  <form role="form" method="post">
+    {% if backends.not_associated %}
+      {% include 'tethys_portal/accounts/social_buttons.html' with action='Log in' backends=backends.not_associated %}
+      <div class="social-divide-or">
+        <div class="line"></div>
+        <span class="or">or</span>
+      </div>
+    {% endif %}
+    {% csrf_token %}
+    {% bootstrap_field form.username label="Username" %}
+    {% bootstrap_field form.password label="Password" %}
+    {% if form.captcha %}{% bootstrap_field form.captcha show_label=False %}{% endif %}
+    <button type="submit" id="login-submit" class="btn btn-primary mb-3" name="login-submit">Log In</button>
+    {% if signup_enabled %}
+      <span class="d-block">Don't have an account? <a href="{% url 'accounts:register' %}">Sign Up</a></span>
+    {% endif %}
+    <span class="d-block"><a href="{% url 'accounts:password_reset' %}">Forgot your password?</a></span>
+  </form>
+{% endblock %}
+
+{% block terms-of-service-override %}
+{% endblock %}

@@ -493,8 +493,26 @@ Account creation is closed. `ENABLE_OPEN_SIGNUP` is false, so `/accounts/registe
 and accounts are created by an operator with `create_tenant_superuser`. That makes working password
 reset more important, not less, since there is no self service route back in.
 
-`DEFAULT_FROM_EMAIL` is portal wide, not per tenant. A reset for a tenant arrives from the same
-address whichever subdomain requested it, which is worth deciding on before inviting real users.
+`DEFAULT_FROM_EMAIL` is portal wide, not per tenant, and SES only authorises the one verified
+sender, so a reset leaves from the same address whichever subdomain requested it. `EMAIL_FROM` is
+the display name in front of it and defaults to `UFFIS Portal`. Do not put a display name inside
+`DEFAULT_FROM_EMAIL`: Tethys strips a trailing `>` from that value and would send a malformed
+address. The tenant identity is carried by the message instead: the reset body and subject name the
+host that was asked and the link returns to that same host, because `django.contrib.sites` is not
+installed and Django falls back to the request.
+
+## Account pages
+
+Every account page is themed per tenant with no site setting to configure.
+`conf/portal_templates/tethys_portal/accounts/base.html` shadows the Tethys accounts base by name,
+which works because `ADDITIONAL_TEMPLATE_DIRS` puts `portal_templates` ahead of the Tethys template
+directory. It pulls in `uffis/_account.html`, which derives its colours from that tenant's site
+settings. Login, sign up, password change and all four password reset pages inherit from it.
+
+The login, sign up and password change forms declare their fields with `label=""` upstream, so the
+stock pages render empty `<label>` elements and the inputs have no accessible name at all. The
+shadows pass an explicit label to each field. Keep the shadows in step when Tethys changes its own
+copies of these templates.
 
 ## Known limits
 
