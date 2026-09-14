@@ -16,7 +16,7 @@ on:
       iac_ref:
         description: "Aquaveo/tethys-ecs-iac ref. Must be a full 40 character sha, checkout cannot resolve a short one."
         required: false
-        default: ad04e50a3dff84d81dc3c9e7314cf8a02b03c4bd
+        default: c998662452650b59c36a18e4eecde86bdde47deb
         type: string
 
 permissions:
@@ -47,10 +47,11 @@ jobs:
           ACM_ARN: ${{ vars.ACM_CERTIFICATE_ARN }}
           DB_HOST: ${{ vars.DB_HOST }}
           PORTAL_DOMAIN: ${{ vars.PORTAL_DOMAIN }}
+          SES_SMTP_USER: ${{ vars.SES_SMTP_USER }}
           IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
           set -euo pipefail
-          for v in STATE_BUCKET ACCOUNT_ID VPC_ID SUBNET_IDS ACM_ARN DB_HOST PORTAL_DOMAIN IMAGE_TAG; do
+          for v in STATE_BUCKET ACCOUNT_ID VPC_ID SUBNET_IDS ACM_ARN DB_HOST PORTAL_DOMAIN SES_SMTP_USER IMAGE_TAG; do
             [ -n "${!v}" ] || { echo "::error::repository variable $v is not set"; exit 1; }
           done
           cat > tofu/backend.hcl <<EOF
@@ -64,6 +65,7 @@ jobs:
               -e "s|__ACM_ARN__|${ACM_ARN}|g" \
               -e "s|__DB_HOST__|${DB_HOST}|g" \
               -e "s|__PORTAL_DOMAIN__|${PORTAL_DOMAIN}|g" \
+              -e "s|__SES_SMTP_USER__|${SES_SMTP_USER}|g" \
               -e "s|__IMAGE_TAG__|${IMAGE_TAG}|g" \
               tofu/uffis.tfvars.example > tofu/uffis.tfvars
           grep -q "__" tofu/uffis.tfvars && { echo "::error::unsubstituted token in tofu/uffis.tfvars"; exit 1; } || true
@@ -71,7 +73,7 @@ jobs:
       - name: Preflight
         run: |
           set -euo pipefail
-          for v in portal_domain_aliases iam_permissions_boundary; do
+          for v in portal_domain_aliases iam_permissions_boundary email_host; do
             grep -q "variable \"$v\"" iac/tofu/variables.tf || {
               echo "::error::iac module at this ref does not declare $v; the tfvars value would be silently dropped"
               exit 1
