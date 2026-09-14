@@ -27,3 +27,8 @@ db_username  = "tethys_default"
 db_name      = "tethys_platform"
 db_port      = 5432
 db_pool_mode = "direct"
+
+email_host         = "email-smtp.us-east-1.amazonaws.com"
+email_port         = 587
+email_host_user    = "__SES_SMTP_USER__"
+default_from_email = "noreply@uffis.org"
