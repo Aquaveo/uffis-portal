@@ -34,6 +34,12 @@ variable "github_repo_id" {
   type = number
 }
 
+variable "ses_from_address" {
+  type        = string
+  default     = "noreply@uffis.org"
+  description = "The only From address this SMTP user may send as. Scoping the policy means a leaked credential cannot send as anyone else."
+}
+
 variable "github_repo" {
   type    = string
   default = "uffis-portal"
@@ -256,4 +262,41 @@ output "ecr_role_arn" {
 output "deploy_role_arn" {
   description = "Set as the GitHub repo secret AWS_DEPLOY_ROLE_ARN (tofu-deploy.yml + sync-secrets.yml)."
   value       = aws_iam_role.deploy.arn
+}
+
+resource "aws_iam_user" "ses_smtp" {
+  name = "${var.github_repo}-ses-smtp"
+}
+
+data "aws_iam_policy_document" "ses_send" {
+  statement {
+    actions   = ["ses:SendRawEmail"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "ses:FromAddress"
+      values   = [var.ses_from_address]
+    }
+  }
+}
+
+resource "aws_iam_user_policy" "ses_send" {
+  name   = "ses-send-only"
+  user   = aws_iam_user.ses_smtp.name
+  policy = data.aws_iam_policy_document.ses_send.json
+}
+
+resource "aws_iam_access_key" "ses_smtp" {
+  user = aws_iam_user.ses_smtp.name
+}
+
+output "ses_smtp_username" {
+  description = "Set as email_host_user in the portal tfvars."
+  value       = aws_iam_access_key.ses_smtp.id
+}
+
+output "ses_smtp_password" {
+  description = "Set as the EMAIL_PASSWORD GitHub secret. SES derives this from the secret key, it is not the secret key itself."
+  value       = aws_iam_access_key.ses_smtp.ses_smtp_password_v4
+  sensitive   = true
 }
