@@ -498,9 +498,12 @@ address whichever subdomain requested it, which is worth deciding on before invi
 
 ## Known limits
 
-Media is not isolated per tenant. All tenants share one S3 bucket and one `media/` prefix served
-publicly through CloudFront, so any tenant's uploads are readable from any tenant hostname. Do not
-upload non public data until per tenant prefixes are added.
+Media is isolated per tenant but not private. `TenantMediaS3Storage` keys every object under the
+tenant schema, so no tenant can read, overwrite or list another's uploads through the portal, and
+two tenants can hold the same filename. The bucket is still served public read through CloudFront
+with `querystring_auth` off, so anyone holding an object URL can fetch it without authenticating.
+The prefix is a boundary between tenants, not access control against the internet. Do not upload
+anything that must not be public.
 
 The portal wide superuser cannot read tenant data through the admin, because authentication and
 sessions are per tenant. It can administer tenant and domain rows, and so can repoint any tenant
