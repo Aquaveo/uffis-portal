@@ -462,6 +462,40 @@ Third party imagery is not reused beyond an agency's own mark. A partner site's 
 usually licensed stock, and emblems such as the Red Cross are protected independently of copyright,
 so only the institution's own logo is rehosted and anything else is original work.
 
+## Portal mail
+
+Password reset needs an SMTP backend. Without one Django falls back to `localhost:25`, the send
+raises `ConnectionRefusedError`, and the view still returns 302, so the user is told to check an
+inbox that will never receive anything. That is worse than an error, because nobody reports it.
+
+`conf/portal-config.d/30-email.sh` configures Django from the task environment. With no `EMAIL_HOST`
+it skips and says so. With `EMAIL_HOST` set but any of user, password or from address missing it
+fails the container, because a half configured backend fails at send time and Django reports that
+to the user as success.
+
+Setup with SES in the portal account:
+
+1. Verify the sender domain in SES and publish the DKIM records in the `uffis.org` zone, which is
+   in another account.
+2. Request production access. A new account is sandboxed, capped at 200 messages a day, and will
+   only deliver to addresses you have individually verified, so reset mail to a real user fails
+   until AWS grants it.
+3. Create SMTP credentials in SES. They are not the same as an IAM access key, SES derives an SMTP
+   password from it.
+4. Set the `EMAIL_PASSWORD` GitHub secret, then run sync secrets. The parameter is optional, so an
+   unset secret is skipped rather than failing the run.
+5. Set `email_host`, `email_host_user` and `default_from_email` in the tofu vars and deploy.
+
+The mail secret is only attached to the task when `email_host` is set. A `valueFrom` pointing at a
+parameter that does not exist stops the task from starting at all.
+
+Account creation is closed. `ENABLE_OPEN_SIGNUP` is false, so `/accounts/register/` redirects away
+and accounts are created by an operator with `create_tenant_superuser`. That makes working password
+reset more important, not less, since there is no self service route back in.
+
+`DEFAULT_FROM_EMAIL` is portal wide, not per tenant. A reset for a tenant arrives from the same
+address whichever subdomain requested it, which is worth deciding on before inviting real users.
+
 ## Known limits
 
 Media is not isolated per tenant. All tenants share one S3 bucket and one `media/` prefix served
