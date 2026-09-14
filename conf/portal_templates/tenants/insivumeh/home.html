@@ -1,0 +1,18 @@
+{% extends "uffis/home.html" %}
+{% load static %}
+
+{% block agency_tagline %}Instituto Nacional de Sismología, Vulcanología, Meteorología e Hidrología{% endblock %}
+{% block capabilities_heading %}Qué ofrece este portal{% endblock %}
+{% block open_apps_label %}Abrir las herramientas{% endblock %}
+{% block login_label %}Iniciar sesión{% endblock %}
+{% block partners_label %}En colaboración con{% endblock %}
+
+{% block agency_mark %}
+  <li>
+    <a href="https://insivumeh.gob.gt" rel="noopener">
+      <img src="{% static 'tenants/insivumeh/insivumeh_seal.png' %}"
+           alt="Instituto Nacional de Sismología, Vulcanología, Meteorología e Hidrología"
+           loading="lazy" width="48" height="48">
+    </a>
+  </li>
+{% endblock %}
