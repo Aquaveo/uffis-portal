@@ -11,6 +11,8 @@ when Tethys changes its own copy.
 
 {% load static tethys %}
 
+{% block htmltag %}<html lang="{{ tenant_language|default:'en' }}" class="h-100">{% endblock %}
+
 {% block styles %}
   {{ block.super }}
   <link href="{% static '/tethys_portal/css/account_form.min.css' %}"  rel="stylesheet" />

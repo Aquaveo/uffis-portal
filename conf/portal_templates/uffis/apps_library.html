@@ -1,5 +1,7 @@
 {% extends "tethys_apps/app_library.html" %}
 
+{% block htmltag %}<html lang="{{ tenant_language|default:'en' }}" class="h-100">{% endblock %}
+
 {% comment %}
 Extends the stock library so app discovery, tag search and the configured/unconfigured split stay
 upstream. Only the surface is ours.

@@ -44,5 +44,5 @@ COPY --from=builder /opt/conda  /opt/conda
 COPY --chown=1000:1000 conf/portal_config.yml /config/portal_config.yml
 COPY --chmod=0755 conf/portal-config.d/ /opt/portal/portal-config.d/
 COPY --chmod=0755 conf/init.d/ /opt/portal/init.d/
-COPY conf/portal_storage.py conf/email_settings.py conf/register_tenants.py conf/harvest_tenants.py conf/site_tenants.py conf/provision_tenant_store.py /opt/portal/
+COPY conf/portal_storage.py conf/email_settings.py conf/portal_context.py conf/register_tenants.py conf/harvest_tenants.py conf/site_tenants.py conf/provision_tenant_store.py /opt/portal/
 COPY conf/portal_templates/ /opt/portal/portal_templates/

@@ -3,6 +3,8 @@
 
 {% block title %}{{ block.super }}{% endblock %}
 
+{% block htmltag %}<html lang="{{ tenant_language|default:'en' }}" class="h-100">{% endblock %}
+
 {% block styles %}
   {{ block.super }}
   {% include "uffis/_palette.html" %}
@@ -12,9 +14,12 @@
     .site-footer { background-color: var(--brand); }
 
     .u-hero {
+      /* The portal header is fixed and the hero sits under it. The pull and the padding have to
+         agree or the hero either overlaps the header or leaves a gap, so they are one value. */
+      --u-header-overlap: 206px;
       position: relative;
-      margin-top: -206px;
-      padding: 250px 1.5rem 5.5rem;
+      margin-top: calc(-1 * var(--u-header-overlap));
+      padding: calc(var(--u-header-overlap) + 2.75rem) 1.5rem 5.5rem;
       background:
         radial-gradient(1100px 520px at 78% 6%, color-mix(in oklch, var(--accent) 22%, transparent) 0%, transparent 60%),
         linear-gradient(158deg, var(--brand) 0%, var(--brand-deep) 100%);
@@ -37,14 +42,20 @@
     }
     .u-agency-mark img { width: 100%; height: 100%; object-fit: contain; }
     .u-agency-name { margin: 0; font-size: var(--step-0); font-weight: 700; letter-spacing: .01em; }
-    .u-agency-sub { margin: .15rem 0 0; font-size: .87rem; opacity: .78; }
+    .u-agency-sub {
+      margin: .15rem 0 0; font-size: .87rem;
+      color: color-mix(in oklch, var(--on-brand) 78%, var(--brand));
+    }
 
     .u-hero h1 {
       max-width: 22ch; margin: 0 0 1.15rem;
       font-size: var(--step-4); font-weight: 700; line-height: 1.08; letter-spacing: -.02em;
       text-wrap: balance;
     }
-    .u-hero p.lead { max-width: 68ch; margin: 0; font-size: var(--step-1); line-height: 1.6; opacity: .9; }
+    .u-hero p.lead {
+      max-width: 68ch; margin: 0; font-size: var(--step-1); line-height: 1.6;
+      color: color-mix(in oklch, var(--on-brand) 90%, var(--brand));
+    }
 
     .u-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2.5rem; }
     .u-btn {
@@ -68,9 +79,13 @@
       font-size: var(--step-2); font-weight: 700; line-height: 1.15; letter-spacing: -.015em;
       text-wrap: balance;
     }
-    .u-cap-heading::after {
-      content: ""; display: block; width: 3.5rem; height: 3px;
+    .u-cap-heading .u-cap-rule {
+      display: block; width: 3.5rem; height: 3px; margin-bottom: 1.25rem;
       background: var(--brand);
+    }
+    .u-cap-lede {
+      margin: 0; max-width: 30ch;
+      color: var(--muted); font-size: .95rem; line-height: 1.6;
     }
     .u-cap-list { margin: 0; padding: 0; list-style: none; counter-reset: cap; }
     .u-cap {
@@ -140,7 +155,9 @@
     }
     .u-partners a { color: var(--ink); text-decoration: none; }
 
-    @media (max-width: 47.98rem) { .u-hero { padding-top: 210px; padding-bottom: 3.5rem; } }
+    @media (max-width: 47.98rem) {
+      .u-hero { padding-top: calc(var(--u-header-overlap) + .25rem); padding-bottom: 3.5rem; }
+    }
     @media (prefers-reduced-motion: reduce) { .u-btn { transition: none; } }
   </style>
 {% endblock %}
@@ -190,6 +207,8 @@
   <div class="u-cap-grid">
     <div class="u-cap-heading">
       <h2>{% block capabilities_heading %}What this portal does{% endblock %}</h2>
+      <span class="u-cap-rule" aria-hidden="true"></span>
+      <p class="u-cap-lede">{% block capabilities_lede %}Rainfall, forecasts and impact in one place, arranged for the people on shift.{% endblock %}</p>
     </div>
     <ol class="u-cap-list">
       <li class="u-cap">
