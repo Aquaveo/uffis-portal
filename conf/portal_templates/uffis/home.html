@@ -82,10 +82,16 @@
       display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem 2.5rem;
       margin: 0; padding: 0; list-style: none;
     }
+    /* Marks are set to a common optical weight, not a common height. These lockups run from 3:1
+       to 7:1, so one height would leave the widest ones with unreadable type and the compact ones
+       shouting. Each height is tuned so the smallest text in every mark lands near the same size. */
     .u-partner-marks img {
-      display: block; height: 48px; width: auto; max-width: 15rem;
+      display: block; height: var(--mark-h, 48px); width: auto; max-width: 26rem;
+      object-fit: contain;
       opacity: .85; transition: opacity .25s var(--ease);
     }
+    .u-mark-compact { --mark-h: 40px; }
+    .u-mark-wide { --mark-h: 58px; }
     .u-partner-marks a { display: inline-flex; border-radius: 3px; }
     .u-partner-marks a:hover img, .u-partner-marks a:focus-visible img { opacity: 1; }
     .u-partner-marks a:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; }
@@ -94,7 +100,9 @@
       border-bottom: 2px solid var(--brand); padding-bottom: .15rem;
     }
     .u-partner-text:hover { color: var(--brand); }
-    @media (max-width: 47.98rem) { .u-partner-marks img { height: 36px; } }
+    @media (max-width: 47.98rem) {
+      .u-partner-marks img { height: calc(var(--mark-h, 48px) * 0.75); }
+    }
     .u-partners-label {
       margin: 0; font-size: .74rem; font-weight: 700; letter-spacing: .14em;
       text-transform: uppercase; color: var(--muted);
@@ -183,7 +191,9 @@
     <p class="u-partners-label">{% block partners_label %}A collaboration of{% endblock %}</p>
     <ul class="u-partner-marks">
       {% block agency_mark %}{% endblock %}
-      <li><a href="https://uiowa.edu" rel="noopener"><img src="{% static 'partners/uiowa.png' %}" alt="University of Iowa" loading="lazy" width="165" height="48"></a></li>
+      <li><a href="https://iihr.uiowa.edu" rel="noopener"><img src="{% static 'partners/uiowa.png' %}" alt="University of Iowa, IIHR Hydroscience and Engineering" loading="lazy" width="278" height="48"></a></li>
+      <li><a href="https://www.rutgers.edu" rel="noopener"><img src="{% static 'partners/rutgers.png' %}" alt="Rutgers University" class="u-mark-compact" loading="lazy" width="136" height="40"></a></li>
+      <li><a href="https://ncdp.columbia.edu" rel="noopener"><img src="{% static 'partners/columbia.png' %}" alt="Columbia Climate School, National Center for Disaster Preparedness" class="u-mark-wide" loading="lazy" width="428" height="58"></a></li>
       <li><a href="https://tethysgeoscience.org" rel="noopener"><img src="{% static 'partners/tgf.png' %}" alt="Tethys Geoscience Foundation" loading="lazy" width="240" height="48"></a></li>
       <li><a href="https://wmo.int" rel="noopener"><img src="{% static 'partners/wmo.svg' %}" alt="World Meteorological Organization" loading="lazy" width="156" height="48"></a></li>
     </ul>

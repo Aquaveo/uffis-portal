@@ -1,0 +1,15 @@
+{% extends "uffis/home.html" %}
+{% load static %}
+
+{% block agency_tagline %}Barbados Meteorological Services{% endblock %}
+{% block partners_label %}Operated with{% endblock %}
+
+{% block agency_mark %}
+  <li>
+    <a href="https://www.barbadosweather.org" rel="noopener">
+      <img src="{% static 'tenants/bms/bms_logo.png' %}"
+           alt="Barbados Meteorological Services"
+           loading="lazy" width="48" height="48">
+    </a>
+  </li>
+{% endblock %}
