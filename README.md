@@ -493,9 +493,23 @@ Setup with SES in the portal account:
 The mail secret is only attached to the task when `email_host` is set. A `valueFrom` pointing at a
 parameter that does not exist stops the task from starting at all.
 
-Account creation is closed. `ENABLE_OPEN_SIGNUP` is false, so `/accounts/register/` redirects away
-and accounts are created by an operator with `create_tenant_superuser`. That makes working password
-reset more important, not less, since there is no self service route back in.
+Account creation is open. `ENABLE_OPEN_SIGNUP` is true, so `/accounts/register/` serves a sign up
+form and the login page offers the link. Operators still create staff accounts with
+`create_tenant_superuser`.
+
+A sign up is scoped to the host it happened on, because `auth_user` is a tenant table. Registering
+at `abms.uffis.org` creates an account that exists only in the abms schema: the same credentials do
+not authenticate on another tenant, and the same username can be claimed independently on each. The
+setting itself is portal wide, so signup is open on every tenant or none.
+
+There is no captcha. Neither `captcha` nor `django_recaptcha` is installed, so `get_captcha()`
+returns None and the form has no bot challenge. Setting `ENABLE_CAPTCHA` without first adding one of
+those packages raises at import.
+
+A self registered account can open every app on its tenant. `user_can_access_app` returns True for
+any authenticated user unless `ENABLE_RESTRICTED_APP_ACCESS` is set, and it is not. Set it to true
+to require the per app `access_app` permission instead, which is granted through app permission
+groups in the admin.
 
 `DEFAULT_FROM_EMAIL` is portal wide, not per tenant, and SES only authorises the one verified
 sender, so a reset leaves from the same address whichever subdomain requested it. `EMAIL_FROM` is
