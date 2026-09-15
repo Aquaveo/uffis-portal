@@ -468,10 +468,14 @@ Password reset needs an SMTP backend. Without one Django falls back to `localhos
 raises `ConnectionRefusedError`, and the view still returns 302, so the user is told to check an
 inbox that will never receive anything. That is worse than an error, because nobody reports it.
 
-`conf/portal-config.d/30-email.sh` configures Django from the task environment. With no `EMAIL_HOST`
-it skips and says so. With `EMAIL_HOST` set but any of user, password or from address missing it
-fails the container, because a half configured backend fails at send time and Django reports that
-to the user as success.
+`conf/email_settings.py` builds the mail settings from the task environment. Tethys reads
+`portal_config.yml` with a plain `yaml.safe_load` and reads nothing but `DJANGO_LOG_LEVEL` from the
+environment, so an ECS secret has no way into settings on its own. The module closes that gap:
+`TETHYS_PORTAL_CONFIG.ADDITIONAL_SETTINGS_FILES` names it and Tethys copies every name in its
+`__all__` onto the settings module. With no `EMAIL_HOST` it exports nothing and Django keeps its
+defaults. With `EMAIL_HOST` set but any of user, password or from address missing it raises and the
+container fails at boot, because a half configured backend raises at send time and Django reports
+that to the user as success.
 
 Setup with SES in the portal account:
 
@@ -497,7 +501,7 @@ reset more important, not less, since there is no self service route back in.
 sender, so a reset leaves from the same address whichever subdomain requested it. `EMAIL_FROM` is
 the display name in front of it and defaults to `UFFIS Portal`. Do not put a display name inside
 `DEFAULT_FROM_EMAIL`: Tethys strips a trailing `>` from that value and would send a malformed
-address. The tenant identity is carried by the message instead: the reset body and subject name the
+address, and `email_settings.py` refuses to boot on one rather than leave it to be remembered. The tenant identity is carried by the message instead: the reset body and subject name the
 host that was asked and the link returns to that same host, because `django.contrib.sites` is not
 installed and Django falls back to the request.
 
