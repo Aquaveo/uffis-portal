@@ -1,0 +1,38 @@
+{% extends "tethys_portal/accounts/base.html" %}
+
+{% comment %}
+Shadows the stock sign up for the same reason as the login shadow: the fields carry labels.
+The page only answers when open signup is enabled; while it is off the view redirects and this
+template is never rendered, so it is here to be correct the day signup is turned on.
+{% endcomment %}
+
+{% load django_bootstrap5 tethys %}
+
+{% block title %}{{ block.super }} - Sign Up{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+  {{ site_globals.register_css|load_custom_css|safe }}
+{% endblock %}
+
+{% block account_form_title %}Sign Up{% endblock %}
+
+{% block account_form_body %}
+  <form role="form" method="post">
+    {% if backends.not_associated %}
+      {% include 'tethys_portal/accounts/social_buttons.html' with action='Sign up' backends=backends.not_associated %}
+      <div class="social-divide-or">
+        <div class="line"></div>
+        <span class="or">or</span>
+      </div>
+    {% endif %}
+    {% csrf_token %}
+    {% bootstrap_field form.username label="Username" %}
+    {% bootstrap_field form.email label="Email address" %}
+    {% bootstrap_field form.password1 label="Password" %}
+    {% bootstrap_field form.password2 label="Confirm password" %}
+    {% if form.captcha %}{% bootstrap_field form.captcha show_label=False %}{% endif %}
+    <button type="submit" id="register-submit" class="btn btn-primary mb-3" name="register-submit">Sign Up</button>
+    <span class="d-block">Already have an account? <a href="{% url 'accounts:login' %}">Login</a></span>
+  </form>
+{% endblock %}

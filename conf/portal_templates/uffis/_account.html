@@ -1,0 +1,93 @@
+{% comment %}
+Shared surface for every account page. The stock accounts base wraps each form in
+.account-form-wrapper, so the whole surface is themed from that one hook and the per tenant palette
+carries the rest. Included from the accounts base, which every account page extends, so a tenant
+needs no template setting for login, sign up, password change or password reset to look like itself.
+{% endcomment %}
+{% include "uffis/_palette.html" %}
+<style id="uffis-account">
+  body { background: var(--page); color: var(--ink); }
+
+  .account-form-wrapper {
+    max-width: 30rem; margin-inline: auto;
+    padding: clamp(1.75rem, 4vw, 2.5rem);
+    border: 1px solid var(--line); border-radius: 6px;
+    background: var(--surface);
+  }
+
+  .account-form-header h1 {
+    margin: 0 0 1.5rem; padding-bottom: 1rem;
+    border-bottom: 2px solid var(--brand);
+    font-size: var(--step-2); font-weight: 700; letter-spacing: -.01em;
+    color: var(--ink);
+  }
+
+  .account-form-body { font-size: var(--step-0); }
+  .account-form-body p,
+  .account-form-body .d-block,
+  .account-form-body .form-text { color: var(--muted); line-height: 1.6; }
+  .account-form-body p { margin-bottom: 1rem; }
+
+  .account-form-body label {
+    display: block;
+    margin-bottom: .3rem;
+    font-size: .88rem; font-weight: 650; color: var(--muted);
+  }
+  .account-form-body label.visually-hidden { margin: 0; }
+
+  .account-form-body .form-control {
+    padding: .7rem .85rem;
+    border: 1px solid var(--line); border-radius: 4px;
+    background: color-mix(in oklch, var(--brand) 3%, #ffffff);
+    color: var(--ink);
+    font-size: var(--step-0);
+  }
+  .account-form-body .form-control:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-wash);
+  }
+  .account-form-body .form-control:focus-visible,
+  .account-form-body .btn:focus-visible,
+  .account-form-body input[type="submit"]:focus-visible,
+  .account-form-body a:focus-visible {
+    outline: 3px solid var(--brand); outline-offset: 2px;
+  }
+
+  .account-form-body .btn-primary,
+  .account-form-body input[type="submit"] {
+    padding: .75rem 1.25rem;
+    border: 1px solid var(--brand); border-radius: 4px;
+    background: var(--brand); color: var(--on-brand);
+    font-weight: 650;
+    transition: background-color .25s var(--ease);
+  }
+  .account-form-body form > .btn-primary,
+  .account-form-body form > input[type="submit"],
+  .account-form-body form > button[type="submit"] { width: 100%; }
+  .account-form-body .btn-primary:hover,
+  .account-form-body input[type="submit"]:hover {
+    background: color-mix(in oklch, var(--brand) 84%, #000000);
+  }
+  .account-form-body .btn-outline-secondary {
+    padding: .75rem 1.25rem;
+    border: 1px solid var(--line); border-radius: 4px;
+    background: transparent; color: var(--muted); font-weight: 650;
+  }
+  .account-form-body a { color: var(--brand); font-weight: 600; }
+
+  .account-form-body .errorlist,
+  .account-form-body .alert-danger,
+  .account-form-body .invalid-feedback {
+    border: 1px solid color-mix(in oklch, #c0392b 45%, var(--line));
+    border-radius: 4px;
+    padding: .6rem .75rem;
+    background: color-mix(in oklch, #c0392b 8%, var(--surface));
+    color: color-mix(in oklch, #c0392b 70%, var(--ink));
+    font-size: .9rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .account-form-body .btn-primary,
+    .account-form-body input[type="submit"] { transition: none; }
+  }
+</style>
