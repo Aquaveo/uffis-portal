@@ -57,7 +57,7 @@ settings:
     ADDITIONAL_SETTINGS_FILES:
       - email_settings
     ENABLE_OPEN_PORTAL: false
-    ENABLE_OPEN_SIGNUP: true
+    ENABLE_OPEN_SIGNUP: false
     ENABLE_RESTRICTED_APP_ACCESS: true
     BYPASS_TETHYS_HOME_PAGE: false
 
