@@ -506,10 +506,19 @@ There is no captcha. Neither `captcha` nor `django_recaptcha` is installed, so `
 returns None and the form has no bot challenge. Setting `ENABLE_CAPTCHA` without first adding one of
 those packages raises at import.
 
-A self registered account can open every app on its tenant. `user_can_access_app` returns True for
-any authenticated user unless `ENABLE_RESTRICTED_APP_ACCESS` is set, and it is not. Set it to true
-to require the per app `access_app` permission instead, which is granted through app permission
-groups in the admin.
+Signing up does not grant access to any app. `ENABLE_RESTRICTED_APP_ACCESS` is true, so
+`user_can_access_app` requires the object level `<package>:access_app` permission rather than
+returning true for anyone logged in. A new account can sign in and reach its profile, sees an empty
+apps library, and gets a 404 from `TethysAppAccessMiddleware` on an app URL.
+
+Grant access per tenant, in that tenant's admin under Authentication and Authorization, Groups.
+Creating or editing a group there offers the installed apps; ticking one assigns
+`<package>:access_app` to the group, and members of the group inherit it. Superusers bypass the
+check, because guardian short circuits them.
+
+Both settings are portal wide. Signup is open on every tenant or none, and app access is restricted
+on every tenant or none, but the grants themselves are per tenant because groups live in the tenant
+schema.
 
 `DEFAULT_FROM_EMAIL` is portal wide, not per tenant, and SES only authorises the one verified
 sender, so a reset leaves from the same address whichever subdomain requested it. `EMAIL_FROM` is
