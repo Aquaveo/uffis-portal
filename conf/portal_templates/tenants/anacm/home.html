@@ -1,0 +1,18 @@
+{% extends "uffis/home.html" %}
+{% load static %}
+
+{% block agency_tagline %}Agence Nationale de l'Aviation Civile et de la Météorologie{% endblock %}
+{% block capabilities_heading %}Ce que fait ce portail{% endblock %}
+{% block open_apps_label %}Ouvrir les outils{% endblock %}
+{% block login_label %}Se connecter{% endblock %}
+{% block partners_label %}En partenariat avec{% endblock %}
+
+{% block agency_mark %}
+  <li>
+    <a href="https://anacm-comores.com" rel="noopener">
+      <img src="{% static 'tenants/anacm/anacm_logo.png' %}"
+           alt="Agence Nationale de l'Aviation Civile et de la Météorologie"
+           loading="lazy" width="95" height="48">
+    </a>
+  </li>
+{% endblock %}
