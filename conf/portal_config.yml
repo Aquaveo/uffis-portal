@@ -54,6 +54,8 @@ settings:
   TETHYS_PORTAL_CONFIG:
     ADDITIONAL_TEMPLATE_DIRS:
       - portal_templates
+    ADDITIONAL_SETTINGS_FILES:
+      - email_settings
     ENABLE_OPEN_PORTAL: false
     BYPASS_TETHYS_HOME_PAGE: false
 
