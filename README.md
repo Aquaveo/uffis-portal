@@ -493,32 +493,30 @@ Setup with SES in the portal account:
 The mail secret is only attached to the task when `email_host` is set. A `valueFrom` pointing at a
 parameter that does not exist stops the task from starting at all.
 
-Account creation is open. `ENABLE_OPEN_SIGNUP` is true, so `/accounts/register/` serves a sign up
-form and the login page offers the link. Operators still create staff accounts with
-`create_tenant_superuser`.
+Account creation is closed. `ENABLE_OPEN_SIGNUP` is false, so `/accounts/register/` redirects to the
+login page on every tenant and the login page does not offer a sign up link. Accounts are created by
+an operator with `create_tenant_superuser`. That makes working password reset more important, not
+less, since there is no self service route back in.
 
-A sign up is scoped to the host it happened on, because `auth_user` is a tenant table. Registering
-at `abms.uffis.org` creates an account that exists only in the abms schema: the same credentials do
-not authenticate on another tenant, and the same username can be claimed independently on each. The
-setting itself is portal wide, so signup is open on every tenant or none.
+It was open briefly and was closed again deliberately. Open registration with no captcha lets anyone
+create an account, and since `auth_user` is a tenant table that account is scoped to the host it was
+created on. The registration form itself sends no mail, but a registered address can then request a
+password reset, which is the one way a stranger can make the portal send mail. Closing signup
+removes that. The styled sign up template is still shipped and still correct, so the setting is the
+only thing standing between here and self service.
 
-There is no captcha. Neither `captcha` nor `django_recaptcha` is installed, so `get_captcha()`
-returns None and the form has no bot challenge. Setting `ENABLE_CAPTCHA` without first adding one of
-those packages raises at import.
-
-Signing up does not grant access to any app. `ENABLE_RESTRICTED_APP_ACCESS` is true, so
-`user_can_access_app` requires the object level `<package>:access_app` permission rather than
-returning true for anyone logged in. A new account can sign in and reach its profile, sees an empty
-apps library, and gets a 404 from `TethysAppAccessMiddleware` on an app URL.
+Signing up would not have granted access to any app in any case. `ENABLE_RESTRICTED_APP_ACCESS` is
+true, so `user_can_access_app` requires the object level `<package>:access_app` permission rather
+than returning true for anyone logged in. A logged in account with no grant sees an empty apps
+library and gets a 404 from `TethysAppAccessMiddleware` on an app URL.
 
 Grant access per tenant, in that tenant's admin under Authentication and Authorization, Groups.
 Creating or editing a group there offers the installed apps; ticking one assigns
 `<package>:access_app` to the group, and members of the group inherit it. Superusers bypass the
 check, because guardian short circuits them.
 
-Both settings are portal wide. Signup is open on every tenant or none, and app access is restricted
-on every tenant or none, but the grants themselves are per tenant because groups live in the tenant
-schema.
+Both settings are portal wide, so they apply to every tenant or none, but app access grants are per
+tenant because groups live in the tenant schema.
 
 `DEFAULT_FROM_EMAIL` is portal wide, not per tenant, and SES only authorises the one verified
 sender, so a reset leaves from the same address whichever subdomain requested it. `EMAIL_FROM` is
