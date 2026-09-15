@@ -26,7 +26,16 @@
       margin-bottom: 2.25rem; padding-bottom: 1.5rem;
       border-bottom: 1px solid color-mix(in oklch, var(--on-brand) 28%, transparent);
     }
-    .u-agency img { width: 68px; height: 68px; object-fit: contain; }
+    /* Every agency seal here is dark artwork on transparency, and the hero behind it is the
+       agency's own brand colour, so the mark disappears into it. The chip gives the seal the light
+       ground it was drawn for without needing a knockout version of each logo. */
+    .u-agency-mark {
+      display: grid; place-items: center; flex: none; box-sizing: border-box;
+      width: 76px; height: 76px; padding: 8px;
+      border-radius: 8px;
+      background: color-mix(in oklch, var(--on-brand) 94%, var(--brand));
+    }
+    .u-agency-mark img { width: 100%; height: 100%; object-fit: contain; }
     .u-agency-name { margin: 0; font-size: var(--step-0); font-weight: 700; letter-spacing: .01em; }
     .u-agency-sub { margin: .15rem 0 0; font-size: .87rem; opacity: .78; }
 
@@ -52,63 +61,84 @@
 
     .u-capabilities { max-width: 68rem; margin: 0 auto; padding: clamp(3.5rem, 7vw, 6rem) 1.5rem; }
     .u-cap-grid { display: grid; gap: clamp(2rem, 5vw, 4.5rem); }
-    @media (min-width: 62rem) { .u-cap-grid { grid-template-columns: 16rem 1fr; } }
+    @media (min-width: 62rem) { .u-cap-grid { grid-template-columns: 18rem 1fr; } }
+    .u-cap-heading { position: sticky; top: 6rem; align-self: start; }
     .u-cap-heading h2 {
-      position: sticky; top: 6rem; margin: 0;
-      font-size: var(--step-2); font-weight: 700; line-height: 1.2; letter-spacing: -.01em;
+      margin: 0 0 1rem;
+      font-size: var(--step-2); font-weight: 700; line-height: 1.15; letter-spacing: -.015em;
+      text-wrap: balance;
+    }
+    .u-cap-heading::after {
+      content: ""; display: block; width: 3.5rem; height: 3px;
+      background: var(--brand);
     }
     .u-cap-list { margin: 0; padding: 0; list-style: none; counter-reset: cap; }
     .u-cap {
-      display: grid; gap: .35rem 1.4rem; padding: 2rem 0;
+      display: grid; gap: .5rem 1.75rem;
+      padding: clamp(1.75rem, 3.2vw, 2.75rem) 0;
       border-top: 1px solid var(--line); counter-increment: cap;
     }
     .u-cap:first-child { border-top: 0; padding-top: 0; }
-    @media (min-width: 40rem) { .u-cap { grid-template-columns: 4.5rem 1fr; } }
+    @media (min-width: 40rem) { .u-cap { grid-template-columns: 3.5rem 1fr; } }
+    /* The numeral is the section's rhythm, so it is set as display type rather than a grey label. */
     .u-cap-num {
-      font-size: .82rem; font-weight: 700; letter-spacing: .1em;
-      color: var(--muted); font-variant-numeric: tabular-nums; padding-top: .3rem;
+      font-size: var(--step-2); font-weight: 700; line-height: 1;
+      letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+      color: color-mix(in oklch, var(--brand) 32%, transparent);
     }
     .u-cap-num::before { content: counter(cap, decimal-leading-zero); }
-    .u-cap h3 { margin: 0 0 .45rem; font-size: var(--step-1); font-weight: 650; line-height: 1.3; }
+    .u-cap h3 {
+      margin: 0 0 .5rem;
+      font-size: var(--step-1); font-weight: 700; line-height: 1.25; letter-spacing: -.01em;
+    }
     .u-cap p { margin: 0; max-width: 62ch; color: var(--muted); font-size: var(--step-0); line-height: 1.65; }
-    .u-cap img { width: 44px; height: 44px; object-fit: contain; margin-bottom: .75rem; }
+    .u-cap:hover .u-cap-num { color: var(--brand); }
+    .u-cap-num { transition: color .3s var(--ease); }
 
     .u-partners { border-top: 1px solid var(--line); background: var(--surface); }
-    .u-partners-inner {
-      max-width: 68rem; margin: 0 auto; padding: 1.75rem 1.5rem;
-      display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 2.5rem;
-    }
+    .u-partners-inner { max-width: 76rem; margin: 0 auto; padding: 1.75rem 1.5rem; }
+    /* One row on a wide screen. The marks run from 1:1 to 7:1, so rather than pick a height that
+       fits the widest of them, each is capped at its own height and the row is allowed to shrink;
+       the widest marks give up the most width, which is the right order to lose it in. */
     .u-partner-marks {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem 2.5rem;
-      margin: 0; padding: 0; list-style: none;
+      display: flex; flex-wrap: wrap; align-items: center;
+      gap: 1.25rem clamp(.75rem, 1.6vw, 1.5rem);
+      margin: 1rem 0 0; padding: 0; list-style: none;
     }
+    /* One row once there is room for every mark at its own height. Below that they wrap rather
+       than shrink: an SVG with no intrinsic width collapses to nothing when flex squeezes it. */
+    @media (min-width: 73rem) { .u-partner-marks { flex-wrap: nowrap; } }
+    .u-partner-marks li { display: flex; align-items: center; }
     /* Marks are set to a common optical weight, not a common height. These lockups run from 3:1
        to 7:1, so one height would leave the widest ones with unreadable type and the compact ones
        shouting. Each height is tuned so the smallest text in every mark lands near the same size. */
     .u-partner-marks img {
-      display: block; height: var(--mark-h, 48px); width: auto; max-width: 26rem;
+      display: block;
+      height: var(--mark-h, 38px); width: auto;
       object-fit: contain;
       opacity: .85; transition: opacity .25s var(--ease);
     }
-    .u-mark-compact { --mark-h: 40px; }
-    .u-mark-wide { --mark-h: 58px; }
-    .u-partner-marks a { display: inline-flex; border-radius: 3px; }
+    .u-mark-compact { --mark-h: 32px; }
+    .u-mark-wide { --mark-h: 44px; }
+    .u-partner-marks a { display: flex; align-items: center; border-radius: 3px; }
     .u-partner-marks a:hover img, .u-partner-marks a:focus-visible img { opacity: 1; }
     .u-partner-marks a:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; }
+    /* Stands in for a mark when an agency has no logo file, so it is set as a wordmark. The rule
+       it used to carry under it read as an unstyled link rather than as a logo. */
     .u-partner-text {
-      color: var(--ink); font-size: .95rem; font-weight: 650; text-decoration: none;
-      border-bottom: 2px solid var(--brand); padding-bottom: .15rem;
+      display: block; max-width: 12rem;
+      color: var(--ink); font-size: .82rem; font-weight: 700; line-height: 1.25;
+      letter-spacing: -.005em; text-decoration: none; text-wrap: balance;
     }
     .u-partner-text:hover { color: var(--brand); }
     @media (max-width: 47.98rem) {
-      .u-partner-marks img { height: calc(var(--mark-h, 48px) * 0.75); }
+      .u-partner-marks img { height: calc(var(--mark-h, 38px) * 0.85); }
     }
     .u-partners-label {
       margin: 0; font-size: .74rem; font-weight: 700; letter-spacing: .14em;
       text-transform: uppercase; color: var(--muted);
     }
-    .u-partners a, .u-partners span { color: var(--ink); font-size: .93rem; font-weight: 600; text-decoration: none; }
-    .u-partners a:hover { color: var(--brand); text-decoration: underline; }
+    .u-partners a { color: var(--ink); text-decoration: none; }
 
     @media (max-width: 47.98rem) { .u-hero { padding-top: 210px; padding-bottom: 3.5rem; } }
     @media (prefers-reduced-motion: reduce) { .u-btn { transition: none; } }
@@ -127,11 +157,13 @@
     {% block agency_identity %}
       {% if site_globals.brand_image %}
         <div class="u-agency">
-          {% if 'http' in site_globals.brand_image %}
-            <img src="{{ site_globals.brand_image }}" alt="{{ site_globals.brand_text }}">
-          {% else %}
-            <img src="{% static site_globals.brand_image %}" alt="{{ site_globals.brand_text }}">
-          {% endif %}
+          <span class="u-agency-mark">
+            {% if 'http' in site_globals.brand_image %}
+              <img src="{{ site_globals.brand_image }}" alt="{{ site_globals.brand_text }}">
+            {% else %}
+              <img src="{% static site_globals.brand_image %}" alt="{{ site_globals.brand_text }}">
+            {% endif %}
+          </span>
           <div>
             <p class="u-agency-name">{{ site_globals.brand_text }}</p>
             <p class="u-agency-sub">{% block agency_tagline %}Urban Flood Forecasting Information System{% endblock %}</p>
