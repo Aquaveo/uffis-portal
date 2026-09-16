@@ -458,6 +458,13 @@ The settings then reference the path relative to static, for example
 `tenants/abms/abms_logo.png`. `collectstatic` does not delete unknown keys, so uploads
 survive later deploys.
 
+`branding/hero/ocean-vortices.jpg` is the masthead photograph, shared by every tenant and tinted by
+each one's brand colour. It is a NASA MODIS pass over the South Atlantic showing cloud vortices
+shedding off an island, by Jeff Schmaltz of the MODIS Land Rapid Response Team at NASA GSFC, in the
+public domain through Wikimedia Commons. It is deliberately not a photograph of any tenant's own
+country and not a disaster scene: one image has to serve six agencies across the Caribbean, Central
+America and the Indian Ocean without misrepresenting any of them.
+
 Third party imagery is not reused beyond an agency's own mark. A partner site's photographs are
 usually licensed stock, and emblems such as the Red Cross are protected independently of copyright,
 so only the institution's own logo is rehosted and anything else is original work.
