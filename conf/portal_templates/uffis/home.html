@@ -8,6 +8,7 @@
 {% block styles %}
   {{ block.super }}
   {% include "uffis/_palette.html" %}
+  <link rel="preload" as="image" href="{% static 'hero/ocean-vortices.jpg' %}" fetchpriority="high">
   <style id="uffis-home">
     body { background: var(--page); color: var(--ink); -webkit-font-smoothing: antialiased; }
     .site-header #header-navbar { background-color: var(--brand) !important; }
@@ -17,29 +18,27 @@
       /* The portal header is fixed and the hero sits under it. The pull and the padding have to
          agree or the hero either overlaps the header or leaves a gap, so they are one value. */
       --u-header-overlap: 206px;
-      --u-trace-h: clamp(90px, 11vw, 168px);
       position: relative; isolation: isolate;
       margin-top: calc(-1 * var(--u-header-overlap));
-      padding: calc(var(--u-header-overlap) + 2.75rem) 1.5rem calc(var(--u-trace-h) + 2.5rem);
-      background: var(--brand);
+      padding: calc(var(--u-header-overlap) + 2.75rem) 1.5rem 5rem;
       color: var(--on-brand);
+      /* A NASA MODIS pass: cloud vortices shedding off an island in open ocean. The scrim is
+         weighted to the left so the type sits over deep water and the cloud structure stays
+         legible on the right, and it is mixed from the tenant's own brand colour so the same
+         photograph reads as six different portals. */
+      background-color: var(--brand);
+      background-image:
+        linear-gradient(100deg,
+          color-mix(in oklch, var(--brand) 96%, transparent) 0%,
+          color-mix(in oklch, var(--brand) 92%, transparent) 38%,
+          color-mix(in oklch, var(--brand) 72%, transparent) 66%,
+          color-mix(in oklch, var(--brand) 42%, transparent) 100%),
+        url("{% static 'hero/ocean-vortices.jpg' %}");
+      background-size: cover;
+      background-position: 34% 42%;
+      background-repeat: no-repeat;
     }
 
-    /* The bottom edge of the masthead is a flood hydrograph, not a straight rule and not a
-       decorative wave: a flat antecedent stretch, a steep rising limb, one peak, then a long
-       recession. It is the shape this whole portal exists to predict, so it carries the identity
-       instead of a gradient. The light page is the water below it. */
-    .u-hero-trace {
-      position: absolute; inset: auto 0 0 0; height: var(--u-trace-h);
-      line-height: 0; pointer-events: none;
-    }
-    .u-hero-trace svg { display: block; width: 100%; height: 100%; }
-    .u-trace-fill { fill: var(--page); }
-    .u-trace-line {
-      fill: none; stroke: var(--accent); stroke-width: 2.5;
-      vector-effect: non-scaling-stroke; opacity: .9;
-    }
-    .u-trace-peak { fill: var(--accent); }
     .u-hero-inner { max-width: 68rem; margin: 0 auto; }
     .u-agency {
       display: flex; align-items: center; gap: 1rem;
@@ -175,12 +174,21 @@
     }
     .u-partners a { color: var(--ink); text-decoration: none; }
 
-    /* The trace is stretched to the full width, so at phone width the peak compresses into a
-       spike that reads as an arrow rather than a hydrograph, and it collides with the actions.
-       It is a chart only when there is width for one. */
+    /* The diagonal scrim is weighted for a wide box. In a narrow one its weak end covers most of
+       the text column, and white type over sunlit cloud measured 3.3:1 against the lightest tenant
+       brand, under AA. Narrow screens get a near flat scrim instead; the photograph stays as
+       texture rather than subject, which is all it can be at that width. */
+    @media (max-width: 61.99rem) {
+      .u-hero {
+        background-image:
+          linear-gradient(180deg,
+            color-mix(in oklch, var(--brand) 93%, transparent) 0%,
+            color-mix(in oklch, var(--brand) 86%, transparent) 100%),
+          url("{% static 'hero/ocean-vortices.jpg' %}");
+      }
+    }
     @media (max-width: 47.98rem) {
-      .u-hero { --u-trace-h: 0px; padding-top: calc(var(--u-header-overlap) + .25rem); padding-bottom: 3.5rem; }
-      .u-hero-trace { display: none; }
+      .u-hero { padding-top: calc(var(--u-header-overlap) + .25rem); padding-bottom: 3.5rem; }
     }
     @media (prefers-reduced-motion: reduce) { .u-btn { transition: none; } }
   </style>
@@ -224,13 +232,6 @@
         <a href="{% url 'accounts:login' %}" class="u-btn u-btn-line">{% block login_label %}Log in{% endblock %}</a>
       {% endif %}
     </div>
-  </div>
-  <div class="u-hero-trace" aria-hidden="true">
-    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" focusable="false">
-      <path class="u-trace-fill" d="M0 106 C 160 105, 300 107, 470 105 C 580 104, 650 103, 700 101 C 742 99, 772 88, 800 62 C 818 44, 832 20, 852 16 C 874 12, 890 30, 906 50 C 944 96, 986 112, 1050 116 C 1140 121, 1270 120, 1440 118 L 1440 120 L 0 120 Z"/>
-      <path class="u-trace-line" d="M0 106 C 160 105, 300 107, 470 105 C 580 104, 650 103, 700 101 C 742 99, 772 88, 800 62 C 818 44, 832 20, 852 16 C 874 12, 890 30, 906 50 C 944 96, 986 112, 1050 116 C 1140 121, 1270 120, 1440 118"/>
-      <circle class="u-trace-peak" cx="852" cy="16" r="5"/>
-    </svg>
   </div>
 </section>
 
