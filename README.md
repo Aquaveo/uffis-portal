@@ -553,15 +553,21 @@ TLS terminates at CloudFront. The hop to the ALB is plain HTTP, so without help 
 `http://`, password reset links included. The link still works because the edge redirects, but the
 single use token makes one plaintext trip.
 
-CloudFront adds `X-Forwarded-Proto-Edge: https` to origin requests and `SECURE_PROXY_SSL_HEADER`
-points at that instead. `X-Forwarded-Proto` cannot be used for this: the ALB sets it from its own
-listener protocol, so a value from CloudFront is overwritten or appended to, and Django compares it
-exactly.
+CloudFront reaches the ALB over TLS instead, at `origin.uffis.org`, a CNAME to the load balancer in
+the `uffis.org` zone. The ALB carries an HTTPS listener with the same wildcard certificate and sets
+`X-Forwarded-Proto` itself, which cannot be forged because the load balancer overwrites whatever a
+client sends. `SECURE_PROXY_SSL_HEADER` is the stock value.
 
-That header is only believable because `restrict_alb_to_cloudfront` limits the listener to
-CloudFront's origin-facing prefix list. A custom header is not overwritten by the ALB, so while the
-world could reach port 80 the world could also send it. Enabling the header without the restriction
-would be worse than leaving both off.
+The origin needs a name we own because CloudFront validates the origin certificate against the
+origin's domain name. That is the ELB hostname by default, and no public CA will issue for a domain
+Amazon owns. `origin.uffis.org` must never become a CloudFront alias, or requests loop.
+
+The module's `edge_proto_header` is the fallback where no such name exists: CloudFront injects a
+header the portal trusts. It is sound only while nothing but CloudFront can reach the listener, so
+prefer this arrangement, which needs no trusted header at all.
+
+Port 80 remains on the ALB, reachable only from CloudFront. A distribution change takes minutes to
+reach every edge and some still address the origin over HTTP during that window.
 
 The restriction closes a second hole in its own right. The ALB was internet-facing on `0.0.0.0/0`
 and the task's allowed hosts include the load balancer DNS name, so the whole portal answered in

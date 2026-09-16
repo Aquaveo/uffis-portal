@@ -34,4 +34,4 @@ email_host_user    = "__SES_SMTP_USER__"
 default_from_email = "noreply@uffis.org"
 
 restrict_alb_to_cloudfront = true
-edge_proto_header          = "X-Forwarded-Proto-Edge"
+alb_origin_domain          = "origin.uffis.org"
