@@ -3,6 +3,8 @@
 
 {% block title %}{{ block.super }}{% endblock %}
 
+{% block htmltag %}<html lang="{{ tenant_language|default:'en' }}" class="h-100">{% endblock %}
+
 {% block styles %}
   {{ block.super }}
   {% include "uffis/_palette.html" %}
@@ -12,30 +14,63 @@
     .site-footer { background-color: var(--brand); }
 
     .u-hero {
-      position: relative;
-      margin-top: -206px;
-      padding: 250px 1.5rem 5.5rem;
-      background:
-        radial-gradient(1100px 520px at 78% 6%, color-mix(in oklch, var(--accent) 22%, transparent) 0%, transparent 60%),
-        linear-gradient(158deg, var(--brand) 0%, var(--brand-deep) 100%);
+      /* The portal header is fixed and the hero sits under it. The pull and the padding have to
+         agree or the hero either overlaps the header or leaves a gap, so they are one value. */
+      --u-header-overlap: 206px;
+      --u-trace-h: clamp(90px, 11vw, 168px);
+      position: relative; isolation: isolate;
+      margin-top: calc(-1 * var(--u-header-overlap));
+      padding: calc(var(--u-header-overlap) + 2.75rem) 1.5rem calc(var(--u-trace-h) + 2.5rem);
+      background: var(--brand);
       color: var(--on-brand);
     }
+
+    /* The bottom edge of the masthead is a flood hydrograph, not a straight rule and not a
+       decorative wave: a flat antecedent stretch, a steep rising limb, one peak, then a long
+       recession. It is the shape this whole portal exists to predict, so it carries the identity
+       instead of a gradient. The light page is the water below it. */
+    .u-hero-trace {
+      position: absolute; inset: auto 0 0 0; height: var(--u-trace-h);
+      line-height: 0; pointer-events: none;
+    }
+    .u-hero-trace svg { display: block; width: 100%; height: 100%; }
+    .u-trace-fill { fill: var(--page); }
+    .u-trace-line {
+      fill: none; stroke: var(--accent); stroke-width: 2.5;
+      vector-effect: non-scaling-stroke; opacity: .9;
+    }
+    .u-trace-peak { fill: var(--accent); }
     .u-hero-inner { max-width: 68rem; margin: 0 auto; }
     .u-agency {
       display: flex; align-items: center; gap: 1rem;
       margin-bottom: 2.25rem; padding-bottom: 1.5rem;
       border-bottom: 1px solid color-mix(in oklch, var(--on-brand) 28%, transparent);
     }
-    .u-agency img { width: 68px; height: 68px; object-fit: contain; }
+    /* Every agency seal here is dark artwork on transparency, and the hero behind it is the
+       agency's own brand colour, so the mark disappears into it. The chip gives the seal the light
+       ground it was drawn for without needing a knockout version of each logo. */
+    .u-agency-mark {
+      display: grid; place-items: center; flex: none; box-sizing: border-box;
+      width: 76px; height: 76px; padding: 8px;
+      border-radius: 8px;
+      background: color-mix(in oklch, var(--on-brand) 94%, var(--brand));
+    }
+    .u-agency-mark img { width: 100%; height: 100%; object-fit: contain; }
     .u-agency-name { margin: 0; font-size: var(--step-0); font-weight: 700; letter-spacing: .01em; }
-    .u-agency-sub { margin: .15rem 0 0; font-size: .87rem; opacity: .78; }
+    .u-agency-sub {
+      margin: .15rem 0 0; font-size: .87rem;
+      color: color-mix(in oklch, var(--on-brand) 78%, var(--brand));
+    }
 
     .u-hero h1 {
       max-width: 22ch; margin: 0 0 1.15rem;
       font-size: var(--step-4); font-weight: 700; line-height: 1.08; letter-spacing: -.02em;
       text-wrap: balance;
     }
-    .u-hero p.lead { max-width: 68ch; margin: 0; font-size: var(--step-1); line-height: 1.6; opacity: .9; }
+    .u-hero p.lead {
+      max-width: 68ch; margin: 0; font-size: var(--step-1); line-height: 1.6;
+      color: color-mix(in oklch, var(--on-brand) 90%, var(--brand));
+    }
 
     .u-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2.5rem; }
     .u-btn {
@@ -47,70 +82,106 @@
     .u-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     .u-btn-solid { background: var(--accent); border: 1px solid var(--accent); color: var(--ink); }
     .u-btn-solid:hover { background: color-mix(in oklch, var(--accent) 82%, var(--ink)); color: var(--ink); }
-    .u-btn-line { background: transparent; border: 1px solid color-mix(in oklch, var(--on-brand) 55%, transparent); color: var(--on-brand); }
-    .u-btn-line:hover { background: color-mix(in oklch, var(--on-brand) 14%, transparent); color: var(--on-brand); }
+    .u-btn-line {
+      padding-inline: .25rem; background: transparent; border: 0;
+      color: var(--on-brand); text-underline-offset: .3em;
+      text-decoration: underline; text-decoration-thickness: 1px;
+      text-decoration-color: color-mix(in oklch, var(--on-brand) 45%, transparent);
+    }
+    .u-btn-line:hover { color: var(--accent); text-decoration-color: var(--accent); }
 
     .u-capabilities { max-width: 68rem; margin: 0 auto; padding: clamp(3.5rem, 7vw, 6rem) 1.5rem; }
     .u-cap-grid { display: grid; gap: clamp(2rem, 5vw, 4.5rem); }
-    @media (min-width: 62rem) { .u-cap-grid { grid-template-columns: 16rem 1fr; } }
+    @media (min-width: 62rem) { .u-cap-grid { grid-template-columns: 18rem 1fr; } }
+    .u-cap-heading { position: sticky; top: 6rem; align-self: start; }
     .u-cap-heading h2 {
-      position: sticky; top: 6rem; margin: 0;
-      font-size: var(--step-2); font-weight: 700; line-height: 1.2; letter-spacing: -.01em;
+      margin: 0 0 1rem;
+      font-size: var(--step-2); font-weight: 700; line-height: 1.15; letter-spacing: -.015em;
+      text-wrap: balance;
+    }
+    .u-cap-heading .u-cap-rule {
+      display: block; width: 3.5rem; height: 3px; margin-bottom: 1.25rem;
+      background: var(--brand);
+    }
+    .u-cap-lede {
+      margin: 0; max-width: 30ch;
+      color: var(--muted); font-size: .95rem; line-height: 1.6;
     }
     .u-cap-list { margin: 0; padding: 0; list-style: none; counter-reset: cap; }
     .u-cap {
-      display: grid; gap: .35rem 1.4rem; padding: 2rem 0;
+      display: grid; gap: .5rem 1.75rem;
+      padding: clamp(1.75rem, 3.2vw, 2.75rem) 0;
       border-top: 1px solid var(--line); counter-increment: cap;
     }
     .u-cap:first-child { border-top: 0; padding-top: 0; }
-    @media (min-width: 40rem) { .u-cap { grid-template-columns: 4.5rem 1fr; } }
+    @media (min-width: 40rem) { .u-cap { grid-template-columns: 3.5rem 1fr; } }
+    /* The numeral is the section's rhythm, so it is set as display type rather than a grey label. */
     .u-cap-num {
-      font-size: .82rem; font-weight: 700; letter-spacing: .1em;
-      color: var(--muted); font-variant-numeric: tabular-nums; padding-top: .3rem;
+      font-size: var(--step-2); font-weight: 700; line-height: 1;
+      letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+      color: color-mix(in oklch, var(--brand) 32%, transparent);
     }
     .u-cap-num::before { content: counter(cap, decimal-leading-zero); }
-    .u-cap h3 { margin: 0 0 .45rem; font-size: var(--step-1); font-weight: 650; line-height: 1.3; }
+    .u-cap h3 {
+      margin: 0 0 .5rem;
+      font-size: var(--step-1); font-weight: 700; line-height: 1.25; letter-spacing: -.01em;
+    }
     .u-cap p { margin: 0; max-width: 62ch; color: var(--muted); font-size: var(--step-0); line-height: 1.65; }
-    .u-cap img { width: 44px; height: 44px; object-fit: contain; margin-bottom: .75rem; }
+    .u-cap:hover .u-cap-num { color: var(--brand); }
+    .u-cap-num { transition: color .3s var(--ease); }
 
     .u-partners { border-top: 1px solid var(--line); background: var(--surface); }
-    .u-partners-inner {
-      max-width: 68rem; margin: 0 auto; padding: 1.75rem 1.5rem;
-      display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 2.5rem;
-    }
+    .u-partners-inner { max-width: 76rem; margin: 0 auto; padding: 1.75rem 1.5rem; }
+    /* One row on a wide screen. The marks run from 1:1 to 7:1, so rather than pick a height that
+       fits the widest of them, each is capped at its own height and the row is allowed to shrink;
+       the widest marks give up the most width, which is the right order to lose it in. */
     .u-partner-marks {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem 2.5rem;
-      margin: 0; padding: 0; list-style: none;
+      display: flex; flex-wrap: wrap; align-items: center;
+      gap: 1.25rem clamp(.75rem, 1.6vw, 1.5rem);
+      margin: 1rem 0 0; padding: 0; list-style: none;
     }
+    /* One row once there is room for every mark at its own height. Below that they wrap rather
+       than shrink: an SVG with no intrinsic width collapses to nothing when flex squeezes it. */
+    @media (min-width: 73rem) { .u-partner-marks { flex-wrap: nowrap; } }
+    .u-partner-marks li { display: flex; align-items: center; }
     /* Marks are set to a common optical weight, not a common height. These lockups run from 3:1
        to 7:1, so one height would leave the widest ones with unreadable type and the compact ones
        shouting. Each height is tuned so the smallest text in every mark lands near the same size. */
     .u-partner-marks img {
-      display: block; height: var(--mark-h, 48px); width: auto; max-width: 26rem;
+      display: block;
+      height: var(--mark-h, 38px); width: auto;
       object-fit: contain;
       opacity: .85; transition: opacity .25s var(--ease);
     }
-    .u-mark-compact { --mark-h: 40px; }
-    .u-mark-wide { --mark-h: 58px; }
-    .u-partner-marks a { display: inline-flex; border-radius: 3px; }
+    .u-mark-compact { --mark-h: 32px; }
+    .u-mark-wide { --mark-h: 44px; }
+    .u-partner-marks a { display: flex; align-items: center; border-radius: 3px; }
     .u-partner-marks a:hover img, .u-partner-marks a:focus-visible img { opacity: 1; }
     .u-partner-marks a:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; }
+    /* Stands in for a mark when an agency has no logo file, so it is set as a wordmark. The rule
+       it used to carry under it read as an unstyled link rather than as a logo. */
     .u-partner-text {
-      color: var(--ink); font-size: .95rem; font-weight: 650; text-decoration: none;
-      border-bottom: 2px solid var(--brand); padding-bottom: .15rem;
+      display: block; max-width: 12rem;
+      color: var(--ink); font-size: .82rem; font-weight: 700; line-height: 1.25;
+      letter-spacing: -.005em; text-decoration: none; text-wrap: balance;
     }
     .u-partner-text:hover { color: var(--brand); }
     @media (max-width: 47.98rem) {
-      .u-partner-marks img { height: calc(var(--mark-h, 48px) * 0.75); }
+      .u-partner-marks img { height: calc(var(--mark-h, 38px) * 0.85); }
     }
     .u-partners-label {
       margin: 0; font-size: .74rem; font-weight: 700; letter-spacing: .14em;
       text-transform: uppercase; color: var(--muted);
     }
-    .u-partners a, .u-partners span { color: var(--ink); font-size: .93rem; font-weight: 600; text-decoration: none; }
-    .u-partners a:hover { color: var(--brand); text-decoration: underline; }
+    .u-partners a { color: var(--ink); text-decoration: none; }
 
-    @media (max-width: 47.98rem) { .u-hero { padding-top: 210px; padding-bottom: 3.5rem; } }
+    /* The trace is stretched to the full width, so at phone width the peak compresses into a
+       spike that reads as an arrow rather than a hydrograph, and it collides with the actions.
+       It is a chart only when there is width for one. */
+    @media (max-width: 47.98rem) {
+      .u-hero { --u-trace-h: 0px; padding-top: calc(var(--u-header-overlap) + .25rem); padding-bottom: 3.5rem; }
+      .u-hero-trace { display: none; }
+    }
     @media (prefers-reduced-motion: reduce) { .u-btn { transition: none; } }
   </style>
 {% endblock %}
@@ -127,11 +198,13 @@
     {% block agency_identity %}
       {% if site_globals.brand_image %}
         <div class="u-agency">
-          {% if 'http' in site_globals.brand_image %}
-            <img src="{{ site_globals.brand_image }}" alt="{{ site_globals.brand_text }}">
-          {% else %}
-            <img src="{% static site_globals.brand_image %}" alt="{{ site_globals.brand_text }}">
-          {% endif %}
+          <span class="u-agency-mark">
+            {% if 'http' in site_globals.brand_image %}
+              <img src="{{ site_globals.brand_image }}" alt="{{ site_globals.brand_text }}">
+            {% else %}
+              <img src="{% static site_globals.brand_image %}" alt="{{ site_globals.brand_text }}">
+            {% endif %}
+          </span>
           <div>
             <p class="u-agency-name">{{ site_globals.brand_text }}</p>
             <p class="u-agency-sub">{% block agency_tagline %}Urban Flood Forecasting Information System{% endblock %}</p>
@@ -152,12 +225,21 @@
       {% endif %}
     </div>
   </div>
+  <div class="u-hero-trace" aria-hidden="true">
+    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" focusable="false">
+      <path class="u-trace-fill" d="M0 106 C 160 105, 300 107, 470 105 C 580 104, 650 103, 700 101 C 742 99, 772 88, 800 62 C 818 44, 832 20, 852 16 C 874 12, 890 30, 906 50 C 944 96, 986 112, 1050 116 C 1140 121, 1270 120, 1440 118 L 1440 120 L 0 120 Z"/>
+      <path class="u-trace-line" d="M0 106 C 160 105, 300 107, 470 105 C 580 104, 650 103, 700 101 C 742 99, 772 88, 800 62 C 818 44, 832 20, 852 16 C 874 12, 890 30, 906 50 C 944 96, 986 112, 1050 116 C 1140 121, 1270 120, 1440 118"/>
+      <circle class="u-trace-peak" cx="852" cy="16" r="5"/>
+    </svg>
+  </div>
 </section>
 
 <section class="u-capabilities">
   <div class="u-cap-grid">
     <div class="u-cap-heading">
       <h2>{% block capabilities_heading %}What this portal does{% endblock %}</h2>
+      <span class="u-cap-rule" aria-hidden="true"></span>
+      <p class="u-cap-lede">{% block capabilities_lede %}Rainfall, forecasts and impact in one place, arranged for the people on shift.{% endblock %}</p>
     </div>
     <ol class="u-cap-list">
       <li class="u-cap">
