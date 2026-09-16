@@ -32,3 +32,6 @@ email_host         = "email-smtp.us-east-1.amazonaws.com"
 email_port         = 587
 email_host_user    = "__SES_SMTP_USER__"
 default_from_email = "noreply@uffis.org"
+
+restrict_alb_to_cloudfront = true
+edge_proto_header          = "X-Forwarded-Proto-Edge"

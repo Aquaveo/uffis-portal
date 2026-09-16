@@ -73,7 +73,7 @@ jobs:
       - name: Preflight
         run: |
           set -euo pipefail
-          for v in portal_domain_aliases iam_permissions_boundary email_host; do
+          for v in portal_domain_aliases iam_permissions_boundary email_host restrict_alb_to_cloudfront edge_proto_header; do
             grep -q "variable \"$v\"" iac/tofu/variables.tf || {
               echo "::error::iac module at this ref does not declare $v; the tfvars value would be silently dropped"
               exit 1

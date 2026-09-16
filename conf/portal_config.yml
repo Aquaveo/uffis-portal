@@ -13,8 +13,11 @@ settings:
     - http://127.0.0.1:8000
     - https://uffis.org
     - https://*.uffis.org
+  # The ALB terminates plain HTTP, so it sets X-Forwarded-Proto: http and Django builds http://
+  # links, password reset among them. CloudFront adds this header instead, and only CloudFront can
+  # reach the listener once restrict_alb_to_cloudfront is on.
   SECURE_PROXY_SSL_HEADER:
-    - HTTP_X_FORWARDED_PROTO
+    - HTTP_X_FORWARDED_PROTO_EDGE
     - https
   SESSION_COOKIE_SECURE: true
   CSRF_COOKIE_SECURE: true

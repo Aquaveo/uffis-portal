@@ -546,6 +546,28 @@ stock pages render empty `<label>` elements and the inputs have no accessible na
 shadows pass an explicit label to each field. Keep the shadows in step when Tethys changes its own
 copies of these templates.
 
+## TLS to the origin
+
+TLS terminates at CloudFront. The hop to the ALB is plain HTTP, so without help the ALB sets
+`X-Forwarded-Proto: http`, `request.is_secure()` is false, and every absolute URL Django builds is
+`http://`, password reset links included. The link still works because the edge redirects, but the
+single use token makes one plaintext trip.
+
+CloudFront adds `X-Forwarded-Proto-Edge: https` to origin requests and `SECURE_PROXY_SSL_HEADER`
+points at that instead. `X-Forwarded-Proto` cannot be used for this: the ALB sets it from its own
+listener protocol, so a value from CloudFront is overwritten or appended to, and Django compares it
+exactly.
+
+That header is only believable because `restrict_alb_to_cloudfront` limits the listener to
+CloudFront's origin-facing prefix list. A custom header is not overwritten by the ALB, so while the
+world could reach port 80 the world could also send it. Enabling the header without the restriction
+would be worse than leaving both off.
+
+The restriction closes a second hole in its own right. The ALB was internet-facing on `0.0.0.0/0`
+and the task's allowed hosts include the load balancer DNS name, so the whole portal answered in
+plaintext at `http://<alb>.elb.amazonaws.com/` with a `Host` header selecting any tenant, bypassing
+the redirect entirely.
+
 ## Known limits
 
 Media is isolated per tenant but not private. `TenantMediaS3Storage` keys every object under the
