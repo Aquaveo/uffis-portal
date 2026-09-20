@@ -29,7 +29,7 @@ RUN git clone https://github.com/tethysplatform/tethysapp-tethys_dash.git \
   && ( cd "${TETHYS_APPS_ROOT}/tethysdash" && npm install && npm run build ) \
   && uv pip install --no-cache "${TETHYS_APPS_ROOT}/tethysdash"
 
-ARG WMO_PLUGINS_REF=ba289e0ac0a8ac91c4c2a2a96949fcf84c619a7f
+ARG WMO_PLUGINS_REF=a196348afabc11c474f24a196fd944d2d06464bc
 RUN uv pip install --no-cache \
       "tgf-wmo-plugins @ git+https://github.com/Aquaveo/tgf_wmo_plugins.git@${WMO_PLUGINS_REF}"
 
