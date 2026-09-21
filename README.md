@@ -543,6 +543,26 @@ check, because guardian short circuits them.
 Both settings are portal wide, so they apply to every tenant or none, but app access grants are per
 tenant because groups live in the tenant schema.
 
+A CSRF failure gets an explanation instead of a bare 403. `CSRF_FAILURE_VIEW` points at
+`conf/csrf_failure.py`, which renders `uffis/csrf_failure.html` through the same tenant surface as
+the account pages. The common way to reach one is a sign in state that changed in another tab:
+`django.contrib.auth.login` rotates the CSRF secret, so a form rendered before the rotation carries
+a token the new secret no longer matches. An administrator who approves an account and then returns
+to an already open sign in page hits exactly that, and the page offers a sign out rather than a dead
+end.
+
+Two other reasons land on the same page and need different advice, so the page says which one
+applies. A browser that blocks the CSRF cookie and one that withholds the Referer header both fail
+every attempt, and telling either to reload would loop them forever. The view carries through the
+same two flags Django derives from the reason string and the template branches on them. The reason
+string itself does not reach the template: it interpolates request headers for some failures, and
+the themed page does not have Django's `DEBUG` gate around it.
+
+If the page itself cannot render, the view logs it under `tethys.csrf_failure` and falls back to
+Django's stock 403, so a handled failure never becomes a 500. That fallback holds only while no
+`403_csrf.html` template exists: Django drops to its own context free page on `TemplateDoesNotExist`
+alone, so adding one under `portal_templates` would reintroduce the 500 this view exists to prevent.
+
 `DEFAULT_FROM_EMAIL` is portal wide, not per tenant, and SES only authorises the one verified
 sender, so a reset leaves from the same address whichever subdomain requested it. `EMAIL_FROM` is
 the display name in front of it and defaults to `UFFIS Portal`. Do not put a display name inside
