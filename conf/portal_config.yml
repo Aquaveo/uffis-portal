@@ -22,6 +22,7 @@ settings:
   CSRF_COOKIE_SECURE: true
   SESSION_COOKIE_NAME: __Host-sessionid
   CSRF_COOKIE_NAME: __Host-csrftoken
+  CSRF_FAILURE_VIEW: csrf_failure.view
   STATIC_ROOT: /home/tethys/persist/static
   STATIC_URL: /static/
   MEDIA_ROOT: /home/tethys/persist/media

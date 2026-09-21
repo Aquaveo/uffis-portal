@@ -1,0 +1,51 @@
+{% extends "tethys_portal/accounts/base.html" %}
+
+{% block title %}{{ block.super }} - {% if no_cookie or no_referer %}Form Not Verified{% else %}Page Expired{% endif %}{% endblock %}
+
+{% block account_form_title %}
+  {% if no_cookie %}
+    Your browser is blocking a cookie
+  {% elif no_referer %}
+    Your browser is withholding a header
+  {% else %}
+    This page expired
+  {% endif %}
+{% endblock %}
+
+{% block account_form_body %}
+  {% if no_cookie %}
+    <p>
+      This portal sets a small cookie so it can confirm a form was submitted from a page it
+      served. Your browser did not send it back, so the form could not be verified. Nothing
+      was submitted and nothing was changed.
+    </p>
+    <p>Allow cookies for this site, then open a fresh sign in page.</p>
+    <p><a class="btn btn-primary" href="{% url 'accounts:login' %}">Go to sign in</a></p>
+  {% elif no_referer %}
+    <p>
+      Over a secure connection this portal checks which page a form came from, using a header
+      your browser did not send. The form could not be verified. Nothing was submitted and
+      nothing was changed.
+    </p>
+    <p>Re-enable referrer headers for this site, then open a fresh sign in page.</p>
+    <p><a class="btn btn-primary" href="{% url 'accounts:login' %}">Go to sign in</a></p>
+  {% else %}
+    <p>
+      The form was opened before the current sign in state, so the portal could not verify
+      where it came from. Nothing was submitted and nothing was changed.
+    </p>
+    {% if user.is_authenticated %}
+      <p>
+        You are signed in as <strong>{{ user.get_username }}</strong>. Sign out first if you
+        meant to use a different account.
+      </p>
+      <p class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="{% url 'accounts:logout' %}">Sign out</a>
+        <a class="btn btn-outline-secondary" href="{% url 'user:profile' %}">Back to my account</a>
+      </p>
+    {% else %}
+      <p>Open a fresh sign in page and try again.</p>
+      <p><a class="btn btn-primary" href="{% url 'accounts:login' %}">Go to sign in</a></p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
