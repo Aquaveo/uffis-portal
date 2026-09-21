@@ -14,6 +14,9 @@ python /opt/portal/site_tenants.py
 # dbname to the username. Point those at the portal database so they resolve whatever role connects.
 export PGDATABASE="${PGDATABASE:-${TETHYS_DB_NAME:-tethys_platform}}"
 
+echo "Ensuring the app access group in every tenant schema"
+python /opt/portal/access_groups.py
+
 echo "Provisioning isolated persistent stores per tenant"
 python /opt/portal/provision_tenant_store.py
 

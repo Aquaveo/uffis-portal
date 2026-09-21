@@ -1,0 +1,11 @@
+{% autoescape off %}Someone asked for an account on {{ site }} with the username "{{ user.username }}".
+
+Open this link to confirm that this address is yours:
+
+{{ link }}
+
+The link can be used once and expires in {{ days }} days. Confirming does not yet give you access:
+an administrator at the agency reviews the request afterwards, and you will hear when it is approved.
+
+If you did not ask for this, ignore this message and no account will be created.
+{% endautoescape %}

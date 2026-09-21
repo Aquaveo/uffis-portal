@@ -1,0 +1,15 @@
+{% autoescape off %}{{ requester.username }} has confirmed their email address and is waiting for approval on {{ site }}.
+
+  username  {{ requester.username }}
+  email     {{ requester.email }}
+  portal    {{ host }}
+
+Approve, which activates the account, grants the portal and emails them:
+
+{{ link }}
+
+You will be asked to sign in first if you are not already. The link on its own grants nothing, so
+forwarding this message does not let anyone else approve.
+
+To decline, do nothing. The account stays inactive and cannot sign in.
+{% endautoescape %}

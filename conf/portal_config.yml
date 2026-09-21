@@ -61,8 +61,11 @@ settings:
     ADDITIONAL_SETTINGS_FILES:
       - email_settings
     ENABLE_OPEN_PORTAL: false
-    ENABLE_OPEN_SIGNUP: false
+    ENABLE_OPEN_SIGNUP: true
     ENABLE_RESTRICTED_APP_ACCESS: true
+    REGISTER_CONTROLLER: account_requests.register
+    ADDITIONAL_URLPATTERNS:
+      - account_requests.urlpatterns
     BYPASS_TETHYS_HOME_PAGE: false
 
 site_settings:

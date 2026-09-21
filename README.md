@@ -500,22 +500,40 @@ Setup with SES in the portal account:
 The mail secret is only attached to the task when `email_host` is set. A `valueFrom` pointing at a
 parameter that does not exist stops the task from starting at all.
 
-Account creation is closed. `ENABLE_OPEN_SIGNUP` is false, so `/accounts/register/` redirects to the
-login page on every tenant and the login page does not offer a sign up link. Accounts are created by
-an operator with `create_tenant_superuser`. That makes working password reset more important, not
-less, since there is no self service route back in.
+Accounts are requested, not created. `ENABLE_OPEN_SIGNUP` is true, but `REGISTER_CONTROLLER` points
+at `conf/account_requests.py`, which replaces Tethys's sign up rather than using it. Tethys's own
+creates an active account and logs the person straight in, which on an agency portal would mean
+anyone reaching the page holds an account there.
 
-It was open briefly and was closed again deliberately. Open registration with no captcha lets anyone
-create an account, and since `auth_user` is a tenant table that account is scoped to the host it was
-created on. The registration form itself sends no mail, but a registered address can then request a
-password reset, which is the one way a stranger can make the portal send mail. Closing signup
-removes that. The styled sign up template is still shipped and still correct, so the setting is the
-only thing standing between here and self service.
+    register  ->  account created is_active=False, confirmation link emailed
+    confirm   ->  address proven, that tenant's administrators emailed
+    approve   ->  a person activates it, grants the app and the requester is told
 
-Signing up would not have granted access to any app in any case. `ENABLE_RESTRICTED_APP_ACCESS` is
-true, so `user_can_access_app` requires the object level `<package>:access_app` permission rather
-than returning true for anyone logged in. A logged in account with no grant sees an empty apps
-library and gets a 404 from `TethysAppAccessMiddleware` on an app URL.
+Both gates matter. Confirmation stops robots, because one has to read a mailbox and follow a link,
+and it costs nothing at login, which a captcha would. Approval is the human decision, and it only
+ever sees requests that already proved an address.
+
+Django enforces the wait rather than the interface: `ModelBackend.user_can_authenticate` rejects
+`is_active=False`, so an unapproved account cannot sign in at all.
+
+Nothing stores a token. Both links carry a payload signed with `django.core.signing`, naming the
+user and the schema it was issued under, so a link minted on one tenant is refused on another and an
+expired one stops verifying. Confirmation lasts three days, approval thirty.
+
+The approval link is not authority on its own. Email is not an authenticated channel and a forwarded
+message should not admit anyone, so the endpoint requires a staff session and sends anyone else to
+log in first. The approval itself is also available without the email: the pending queue is the
+stock Django user list filtered by `is_active__exact=0`, per tenant, and `account_requests` adds a
+bulk action to it so a backlog is one click.
+
+Approval puts people in the `Portal Access` group, which carries `<package>:access_app` for every
+installed app. `conf/access_groups.py` creates that group in every schema on each provision, so a
+tenant added later has one without anyone remembering. Activating without it would leave someone
+able to sign in and reach no app, so a missing group is logged as an error.
+
+Any number of administrators can approve, and the list maintains itself: the notification goes to
+every user in that tenant's schema with `is_staff` and an address. An approver does not need to be a
+superuser, only staff with permission over users and groups.
 
 Grant access per tenant, in that tenant's admin under Authentication and Authorization, Groups.
 Creating or editing a group there offers the installed apps; ticking one assigns
