@@ -1,0 +1,14 @@
+{% extends "tethys_portal/accounts/base.html" %}
+
+{% block title %}{{ block.super }} - Address Confirmed{% endblock %}
+{% block account_form_title %}Address confirmed{% endblock %}
+
+{% block account_form_body %}
+  {% if already %}
+    <p>This account is already active. You can sign in with it now.</p>
+  {% else %}
+    <p>Thank you. The administrators at this agency have been told your request is waiting.</p>
+    <p>You will get an email when the account is approved. You cannot sign in until then.</p>
+  {% endif %}
+  <p><a class="btn btn-primary" href="{% url 'accounts:login' %}">Go to log in</a></p>
+{% endblock %}

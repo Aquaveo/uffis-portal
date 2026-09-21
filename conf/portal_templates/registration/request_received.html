@@ -1,0 +1,12 @@
+{% extends "tethys_portal/accounts/base.html" %}
+
+{% block title %}{{ block.super }} - Request Received{% endblock %}
+{% block account_form_title %}Check your email{% endblock %}
+
+{% block account_form_body %}
+  <p>A confirmation link is on its way to <strong>{{ email }}</strong>. Open it to prove the address
+  is yours.</p>
+  <p>Your account is not active yet. Once the address is confirmed, an administrator at this agency
+  reviews the request and you will hear when it is approved.</p>
+  <p><a class="btn btn-primary" href="{% url 'accounts:login' %}">Back to log in</a></p>
+{% endblock %}

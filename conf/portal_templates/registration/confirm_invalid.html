@@ -1,0 +1,10 @@
+{% extends "tethys_portal/accounts/base.html" %}
+
+{% block title %}{{ block.super }} - Link Not Valid{% endblock %}
+{% block account_form_title %}This link is not valid{% endblock %}
+
+{% block account_form_body %}
+  <p>Confirmation links expire, can be used once, and only work on the portal they were issued for.</p>
+  <p>Request the account again and a fresh link will be sent.</p>
+  <p><a class="btn btn-primary" href="{% url 'accounts:register' %}">Request an account</a></p>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% autoescape off %}Your account on {{ site }} has been approved.
+
+Sign in with the username and password you chose when you asked for it:
+
+{{ link }}
+
+If you have forgotten the password, use the forgotten password link on that page.
+{% endautoescape %}
