@@ -17,7 +17,7 @@ ARG TETHYS_DEBUG_MODE="false"
 ENV DEV_REACT_CONFIG="${TETHYS_APPS_ROOT}/tethysdash/reactapp/config/development.env" \
     PROD_REACT_CONFIG="${TETHYS_APPS_ROOT}/tethysdash/reactapp/config/production.env"
 
-ARG TETHYSDASH_REF=4ce52d3e3668add7dd16b83d1269da0bf834e929
+ARG TETHYSDASH_REF=884f947a4a4194c6bdc964e1e96859b9de76f1a1
 RUN git clone https://github.com/tethysplatform/tethysapp-tethys_dash.git \
       "${TETHYS_APPS_ROOT}/tethysdash" \
   && git -C "${TETHYS_APPS_ROOT}/tethysdash" checkout --detach "${TETHYSDASH_REF}" \
@@ -29,7 +29,7 @@ RUN git clone https://github.com/tethysplatform/tethysapp-tethys_dash.git \
   && ( cd "${TETHYS_APPS_ROOT}/tethysdash" && npm install && npm run build ) \
   && uv pip install --no-cache "${TETHYS_APPS_ROOT}/tethysdash"
 
-ARG WMO_PLUGINS_REF=7144175ba92bc60f0f86b384b860eeb17ebec1aa
+ARG WMO_PLUGINS_REF=aeff0ac15d872d161e6984dbd15eace9eb07dba5
 RUN uv pip install --no-cache \
       "tgf-wmo-plugins @ git+https://github.com/Aquaveo/tgf_wmo_plugins.git@${WMO_PLUGINS_REF}"
 
