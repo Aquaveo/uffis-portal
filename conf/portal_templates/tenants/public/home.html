@@ -11,6 +11,13 @@ tenant means editing this list. Each entry carries the agency's own name in the 
 language, which the tenant table does not hold.
 {% endcomment %}
 
+{% comment %}
+The apex belongs to no agency, so the identity chip above the headline has nothing true to show.
+Left alone it renders the portal's own Brand Image and Brand Text, which on this schema are still
+the stock Tethys globe and wordmark.
+{% endcomment %}
+{% block agency_identity %}{% endblock %}
+
 {% block hero_title %}Flood forecasting, operated by the services that issue the warnings{% endblock %}
 
 {% block hero_lead %}UFFIS gives each participating national meteorological and hydrological service its own forecasting portal, for its own catchments and its own duty desk.{% endblock %}
