@@ -1,0 +1,80 @@
+{% extends "uffis/home.html" %}
+
+{% comment %}
+The apex. Every account, app and admin path 404s on the public schema, so this page has no controls
+and must not pretend to: the hero's buttons are replaced by the one thing the apex can usefully say.
+Which service a visitor wants is not knowable here, and a hardcoded list of tenants would go stale,
+so the page gives the address pattern instead. It stays true as tenants come and go.
+{% endcomment %}
+
+{% block hero_title %}Flood forecasting, operated by the services that issue the warnings{% endblock %}
+
+{% block hero_lead %}UFFIS gives each participating national meteorological and hydrological service its own forecasting portal, for its own catchments and its own duty desk.{% endblock %}
+
+{% block hero_actions %}
+  <div class="u-access">
+    <p>Access is arranged by your national meteorological or hydrological service. Each one runs its own portal.</p>
+    <p class="u-access-addr"><span class="u-access-var">service</span>.uffis.org</p>
+  </div>
+{% endblock %}
+
+{% block capabilities_heading %}How the programme works{% endblock %}
+{% block capabilities_lede %}One system, operated separately by each participating service.{% endblock %}
+
+{% block capabilities_list %}
+  <ol class="u-cap-list">
+    <li class="u-cap">
+      <div class="u-cap-num" aria-hidden="true"></div>
+      <div>
+        <h3>A portal for each service</h3>
+        <p>Every participating service runs its own portal, with its own accounts and its own data. Nothing crosses between them.</p>
+      </div>
+    </li>
+    <li class="u-cap">
+      <div class="u-cap-num" aria-hidden="true"></div>
+      <div>
+        <h3>Shared forecasting, local catchments</h3>
+        <p>The same rainfall, streamflow and impact modelling runs behind every portal, configured for the rivers each service is responsible for.</p>
+      </div>
+    </li>
+    <li class="u-cap">
+      <div class="u-cap-num" aria-hidden="true"></div>
+      <div>
+        <h3>Built around the duty desk</h3>
+        <p>Forecasters arrange the views their shift needs and share them with the people who act on the warning.</p>
+      </div>
+    </li>
+  </ol>
+{% endblock %}
+
+{% block custom_styles %}
+  {{ block.super }}
+  <style id="uffis-public">
+    /* Sits where the hero's buttons were. The rule above it repeats the one under the agency
+       identity, so the slot reads as a deliberate statement rather than a gap left by the
+       controls this schema does not have. */
+    .u-access {
+      max-width: 48ch;
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid color-mix(in oklch, var(--on-brand) 28%, transparent);
+    }
+    .u-access p {
+      margin: 0;
+      color: color-mix(in oklch, var(--on-brand) 88%, var(--brand));
+      line-height: 1.6;
+    }
+    /* A hostname, not a link: there is nothing at this address to send anyone to. It is set at
+       display weight so it reads as the answer to the question the paragraph above it raises.
+       anywhere keeps it inside a 320px viewport, where it would otherwise overflow the gutter. */
+    .u-access-addr {
+      margin-top: .9rem;
+      font-size: var(--step-1);
+      font-weight: 650;
+      letter-spacing: -.01em;
+      color: var(--on-brand);
+      overflow-wrap: anywhere;
+    }
+    .u-access-var { color: var(--accent); }
+  </style>
+{% endblock %}

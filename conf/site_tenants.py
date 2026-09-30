@@ -27,6 +27,7 @@ from tethys_cli.site_commands import update_site_settings_content  # noqa: E402
 from tethys_config.models import Setting  # noqa: E402
 
 STOCK_SITE_TITLE = "Tethys Portal"
+PUBLIC_HOME_TEMPLATE = "tenants/public/home.html"
 
 
 def site_settings():
@@ -41,6 +42,27 @@ def is_untouched():
     """Return whether this tenant still carries the stock site title."""
     setting = Setting.objects.filter(name="Site Title").first()
     return setting is not None and setting.content == STOCK_SITE_TITLE
+
+
+def pin_public_home():
+    """Point the public schema at the apex landing page.
+
+    Pinned on every provision rather than seeded once, unlike the tenant settings above. The public
+    admin is closed, so there is no operator edit here to protect, and if this were lost the apex
+    would fall back to the stock portal home carrying the login and sign up links that closing it
+    was meant to remove.
+    """
+    with schema_context("public"):
+        setting = Setting.objects.filter(name="Home Page Template").first()
+        if setting is None:
+            print("public: no Home Page Template setting to pin")
+            return
+        if setting.content == PUBLIC_HOME_TEMPLATE:
+            print("public: home template already pinned")
+            return
+        setting.content = PUBLIC_HOME_TEMPLATE
+        setting.save()
+        print("public: home template pinned to", PUBLIC_HOME_TEMPLATE)
 
 
 def apply():
@@ -62,3 +84,4 @@ def apply():
 
 if __name__ == "__main__":
     apply()
+    pin_public_home()

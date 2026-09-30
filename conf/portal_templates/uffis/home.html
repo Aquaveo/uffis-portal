@@ -221,9 +221,10 @@
       {% endif %}
     {% endblock %}
 
-    <h1 id="hero-title">{{ site_globals.hero_text|default:"Flood forecasting for the communities you serve" }}</h1>
-    <p class="lead">{{ site_globals.blurb_text|default:"Rainfall monitoring, streamflow forecasts and impact information in one place, so forecasters and emergency managers can act before the water arrives." }}</p>
+    <h1 id="hero-title">{% block hero_title %}{{ site_globals.hero_text|default:"Flood forecasting for the communities you serve" }}{% endblock %}</h1>
+    <p class="lead">{% block hero_lead %}{{ site_globals.blurb_text|default:"Rainfall monitoring, streamflow forecasts and impact information in one place, so forecasters and emergency managers can act before the water arrives." }}{% endblock %}</p>
 
+    {% block hero_actions %}
     <div class="u-actions">
       {% if show_app_library_button %}
         <a href="{% url 'app_library' %}" class="u-btn u-btn-solid">{% block open_apps_label %}Open the tools{% endblock %}</a>
@@ -232,6 +233,7 @@
         <a href="{% url 'accounts:login' %}" class="u-btn u-btn-line">{% block login_label %}Log in{% endblock %}</a>
       {% endif %}
     </div>
+    {% endblock %}
   </div>
 </section>
 
@@ -242,6 +244,7 @@
       <span class="u-cap-rule" aria-hidden="true"></span>
       <p class="u-cap-lede">{% block capabilities_lede %}Rainfall, forecasts and impact in one place, arranged for the people on shift.{% endblock %}</p>
     </div>
+    {% block capabilities_list %}
     <ol class="u-cap-list">
       <li class="u-cap">
         <div class="u-cap-num" aria-hidden="true"></div>
@@ -265,6 +268,7 @@
         </div>
       </li>
     </ol>
+    {% endblock %}
   </div>
 </section>
 
