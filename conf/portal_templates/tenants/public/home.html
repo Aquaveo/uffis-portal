@@ -126,6 +126,12 @@ language, which the tenant table does not hold.
 {% block custom_styles %}
   {{ block.super }}
   <style id="uffis-public">
+    /* The portal header carries a Log In button of its own, and every account path 404s on this
+       schema, so on the apex it is a control that goes nowhere. Hiding it rather than shadowing
+       Tethys's header keeps a whole upstream template out of this repo; display none also takes
+       it out of the tab order and the accessibility tree, so it is not merely invisible. */
+    .site-header a[href*="/accounts/login"] { display: none; }
+
     .u-portals { border-top: 1px solid var(--line); }
     .u-portals-inner { max-width: 68rem; margin: 0 auto; padding: clamp(3rem, 6vw, 5rem) 1.5rem; }
     .u-portals h2 {
