@@ -559,9 +559,14 @@ on the public schema and has to keep returning 200. An allowlist that forgot it 
 health check and the service would be replaced.
 
 The landing page is `conf/portal_templates/tenants/public/home.html`, extending the same base every
-tenant extends. It carries no controls, because every control it could offer would 404. Where the
-hero's buttons sit on a tenant it states the address pattern, `service.uffis.org`, which routes
-somebody who has arrived at the wrong place without a list of tenants that would go stale.
+tenant extends. Its job is to send a visitor to the right agency, so it carries a directory of the
+participating services and the hero's one button is an anchor to that directory rather than a
+login. Every other control a portal would offer is absent, because all of them would 404 here.
+
+That directory is written out in the template rather than read from the tenant table, because the
+table does not hold an agency's own name in its own language or its seal. Adding or removing a
+tenant means editing that list. A service with no seal gets its initials as a wordmark, the same
+substitution its own page makes.
 
 `site_tenants.py` pins the public schema's Home Page Template on every provision. That one is
 pinned rather than seeded once, unlike the tenant settings, because the public admin is closed so
