@@ -1,0 +1,187 @@
+{% extends "uffis/home.html" %}
+{% load static %}
+
+{% comment %}
+The apex. Every account, app and admin path 404s on the public schema, so this page has no portal
+controls of its own. Its job is to send a visitor to the right agency, which is what the directory
+below does, and the hero's one button is an anchor to it rather than a login.
+
+The directory is written out here rather than read from the tenant table. Adding or removing a
+tenant means editing this list. Each entry carries the agency's own name in the agency's own
+language, which the tenant table does not hold.
+{% endcomment %}
+
+{% block hero_title %}Flood forecasting, operated by the services that issue the warnings{% endblock %}
+
+{% block hero_lead %}UFFIS gives each participating national meteorological and hydrological service its own forecasting portal, for its own catchments and its own duty desk.{% endblock %}
+
+{% block hero_actions %}
+  <div class="u-actions">
+    <a href="#portals" class="u-btn u-btn-solid">Find your agency portal</a>
+  </div>
+{% endblock %}
+
+{% block after_hero %}
+<section class="u-portals" id="portals" aria-labelledby="portals-title">
+  <div class="u-portals-inner">
+    <h2 id="portals-title">Agency portals</h2>
+    <span class="u-cap-rule" aria-hidden="true"></span>
+    <p class="u-portals-lede">Each service runs its own portal. Accounts are held there, and are arranged by the service itself.</p>
+
+    <ul class="u-portal-grid">
+      <li>
+        <a class="u-portal" href="https://abms.uffis.org">
+          <span class="u-portal-mark">
+            <img src="{% static 'tenants/abms/abms_logo.png' %}" alt="" loading="lazy">
+          </span>
+          <span class="u-portal-text">
+            <span class="u-portal-place">Antigua and Barbuda</span>
+            <span class="u-portal-agency">Antigua and Barbuda Meteorological Services</span>
+          </span>
+          <span class="u-portal-host">abms.uffis.org</span>
+        </a>
+      </li>
+      <li>
+        <a class="u-portal" href="https://bms.uffis.org">
+          <span class="u-portal-mark">
+            <img src="{% static 'tenants/bms/bms_logo.png' %}" alt="" loading="lazy">
+          </span>
+          <span class="u-portal-text">
+            <span class="u-portal-place">Barbados</span>
+            <span class="u-portal-agency">Barbados Meteorological Services</span>
+          </span>
+          <span class="u-portal-host">bms.uffis.org</span>
+        </a>
+      </li>
+      <li>
+        <a class="u-portal" href="https://anacm.uffis.org">
+          <span class="u-portal-mark">
+            <img src="{% static 'tenants/anacm/anacm_logo.png' %}" alt="" loading="lazy">
+          </span>
+          <span class="u-portal-text">
+            <span class="u-portal-place">Comoros</span>
+            <span class="u-portal-agency">Agence Nationale de l'Aviation Civile et de la Météorologie</span>
+          </span>
+          <span class="u-portal-host">anacm.uffis.org</span>
+        </a>
+      </li>
+      <li>
+        <a class="u-portal" href="https://insivumeh.uffis.org">
+          <span class="u-portal-mark">
+            <img src="{% static 'tenants/insivumeh/insivumeh_seal.png' %}" alt="" loading="lazy">
+          </span>
+          <span class="u-portal-text">
+            <span class="u-portal-place">Guatemala</span>
+            <span class="u-portal-agency">Instituto Nacional de Sismología, Vulcanología, Meteorología e Hidrología</span>
+          </span>
+          <span class="u-portal-host">insivumeh.uffis.org</span>
+        </a>
+      </li>
+      <li>
+        {% comment %} No seal exists for this service, so the mark slot is set as a wordmark, the
+        same substitution the agency's own page makes. {% endcomment %}
+        <a class="u-portal" href="https://uhm.uffis.org">
+          <span class="u-portal-mark"><span class="u-portal-wordmark">UHM</span></span>
+          <span class="u-portal-text">
+            <span class="u-portal-place">Haiti</span>
+            <span class="u-portal-agency">Unité Hydrométéorologique d'Haïti</span>
+          </span>
+          <span class="u-portal-host">uhm.uffis.org</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</section>
+{% endblock %}
+
+{% block capabilities_heading %}How the programme works{% endblock %}
+{% block capabilities_lede %}One system, operated separately by each participating service.{% endblock %}
+
+{% block capabilities_list %}
+  <ol class="u-cap-list">
+    <li class="u-cap">
+      <div class="u-cap-num" aria-hidden="true"></div>
+      <div>
+        <h3>A portal for each service</h3>
+        <p>Every participating service runs its own portal, with its own accounts and its own data. Nothing crosses between them.</p>
+      </div>
+    </li>
+    <li class="u-cap">
+      <div class="u-cap-num" aria-hidden="true"></div>
+      <div>
+        <h3>Shared forecasting, local catchments</h3>
+        <p>The same rainfall, streamflow and impact modelling runs behind every portal, configured for the rivers each service is responsible for.</p>
+      </div>
+    </li>
+    <li class="u-cap">
+      <div class="u-cap-num" aria-hidden="true"></div>
+      <div>
+        <h3>Built around the duty desk</h3>
+        <p>Forecasters arrange the views their shift needs and share them with the people who act on the warning.</p>
+      </div>
+    </li>
+  </ol>
+{% endblock %}
+
+{% block custom_styles %}
+  {{ block.super }}
+  <style id="uffis-public">
+    .u-portals { border-top: 1px solid var(--line); }
+    .u-portals-inner { max-width: 68rem; margin: 0 auto; padding: clamp(3rem, 6vw, 5rem) 1.5rem; }
+    .u-portals h2 {
+      margin: 0 0 1rem;
+      font-size: var(--step-2); font-weight: 700; line-height: 1.15; letter-spacing: -.015em;
+    }
+    .u-portals-lede { margin: 0; max-width: 54ch; color: var(--muted); font-size: .95rem; line-height: 1.6; }
+
+    /* Rows, not a tile grid. Five services tile into four across and one alone on the next row,
+       and the count changes as services join, so a row list is the shape that never orphans one.
+       It also gives the agency names, which run to sixty characters in three languages, a line. */
+    .u-portal-grid {
+      display: grid; gap: .75rem;
+      margin: 2.5rem 0 0; padding: 0; list-style: none;
+    }
+    .u-portal {
+      display: grid; align-items: center;
+      grid-template-columns: 4rem 1fr auto; gap: 1.25rem;
+      box-sizing: border-box; padding: 1.15rem 1.35rem;
+      background: var(--surface);
+      border: 1px solid var(--line); border-radius: 6px;
+      text-decoration: none;
+      transition: border-color .25s var(--ease);
+    }
+    .u-portal:hover { border-color: var(--brand); }
+    .u-portal:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+
+    .u-portal-mark { display: flex; align-items: center; justify-content: center; height: 52px; }
+    .u-portal-mark img { max-height: 52px; max-width: 100%; width: auto; object-fit: contain; }
+    /* Stands in where a service has no seal. Set as the initials rather than the full name: the
+       mark column is 4rem and the name is twenty five characters, which overflowed into the
+       heading beside it. max-width keeps any future stand-in inside the column. */
+    .u-portal-wordmark {
+      max-width: 100%;
+      color: var(--brand); font-size: 1.05rem; font-weight: 700; line-height: 1.1;
+      letter-spacing: .02em; text-align: center; overflow-wrap: anywhere;
+    }
+
+    /* min-width 0 so a long agency name wraps inside the row instead of widening it. */
+    .u-portal-text { display: grid; gap: .15rem; min-width: 0; }
+    .u-portal-place { color: var(--ink); font-size: var(--step-1); font-weight: 700; letter-spacing: -.01em; }
+    .u-portal-agency { color: var(--muted); font-size: .85rem; line-height: 1.45; text-wrap: pretty; }
+    .u-portal-host {
+      color: var(--brand); font-size: .85rem; font-weight: 650;
+      white-space: nowrap; text-underline-offset: .25em;
+    }
+    .u-portal:hover .u-portal-host { text-decoration: underline; }
+
+    /* The host drops under the name rather than squeezing the row at phone width. */
+    @media (max-width: 40rem) {
+      .u-portal { grid-template-columns: 3.25rem 1fr; gap: 1rem; }
+      .u-portal-mark { height: 44px; }
+      .u-portal-mark img { max-height: 44px; }
+      .u-portal-host { grid-column: 2; white-space: normal; overflow-wrap: anywhere; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { .u-portal { transition: none; } }
+  </style>
+{% endblock %}

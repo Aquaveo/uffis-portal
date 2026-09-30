@@ -543,6 +543,36 @@ check, because guardian short circuits them.
 Both settings are portal wide, so they apply to every tenant or none, but app access grants are per
 tenant because groups live in the tenant schema.
 
+## The apex
+
+`uffis.org` is the public schema and serves a landing page only. Accounts, apps, the user area and
+the admin all answer 404 there, so nobody can sign up on it and there is nothing to sign in to.
+
+The gate is `conf/public_gate.py`, registered through `MIDDLEWARE`. It keys on the schema rather
+than on the hostname, which is what makes it complete: `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is on, so
+the public schema also answered for the CloudFront domain and for every unrecognised Host. Removing
+the apex DNS record would have closed one of those three doors and left the other two open.
+
+It blocks a named list of prefixes rather than allowing a named list. The load balancer health
+checks `GET /` against the load balancer's own name, which is not a tenant, so that request lands
+on the public schema and has to keep returning 200. An allowlist that forgot it would fail the
+health check and the service would be replaced.
+
+The landing page is `conf/portal_templates/tenants/public/home.html`, extending the same base every
+tenant extends. Its job is to send a visitor to the right agency, so it carries a directory of the
+participating services and the hero's one button is an anchor to that directory rather than a
+login. Every other control a portal would offer is absent, because all of them would 404 here.
+
+That directory is written out in the template rather than read from the tenant table, because the
+table does not hold an agency's own name in its own language or its seal. Adding or removing a
+tenant means editing that list. A service with no seal gets its initials as a wordmark, the same
+substitution its own page makes.
+
+`site_tenants.py` pins the public schema's Home Page Template on every provision. That one is
+pinned rather than seeded once, unlike the tenant settings, because the public admin is closed so
+there is no operator edit to protect, and losing it would fall back to the stock portal home with
+the login and sign up links this exists to remove.
+
 A CSRF failure gets an explanation instead of a bare 403. `CSRF_FAILURE_VIEW` points at
 `conf/csrf_failure.py`, which renders `uffis/csrf_failure.html` through the same tenant surface as
 the account pages. The common way to reach one is a sign in state that changed in another tab:
