@@ -15,6 +15,7 @@ first thing seeding changes, so the marker flips on the first run and never flip
 """
 
 import os
+from datetime import UTC, datetime
 
 import django
 import yaml
@@ -30,9 +31,12 @@ STOCK_SITE_TITLE = "Tethys Portal"
 PUBLIC_HOME_TEMPLATE = "tenants/public/home.html"
 # The apex carries no agency branding of its own, so it keeps the stock Tethys values unless
 # they are set here: site_tenants seeds tenants only, and portal_config.yml names neither.
+# The year is computed rather than written down, so the notice does not go stale in January. The
+# tenants each carry their own agency name here; the apex speaks for the programme.
 PUBLIC_SETTINGS = {
     "Brand Text": "UFFIS",
     "Primary Text Hover Color": "#faaf00",
+    "Footer Copyright": f"Copyright \u00a9 {datetime.now(UTC):%Y} UFFIS",
 }
 
 
