@@ -15,6 +15,7 @@ first thing seeding changes, so the marker flips on the first run and never flip
 """
 
 import os
+from datetime import UTC, datetime
 
 import django
 import yaml
@@ -28,6 +29,16 @@ from tethys_config.models import Setting  # noqa: E402
 
 STOCK_SITE_TITLE = "Tethys Portal"
 PUBLIC_HOME_TEMPLATE = "tenants/public/home.html"
+# The apex carries no agency branding of its own, so it keeps the stock Tethys values unless
+# they are set here: site_tenants seeds tenants only, and portal_config.yml names neither.
+# Brand Text is rendered twice, in the header bar and in the identity chip above the headline, so
+# one value settles both. The year is computed rather than written down, so the copyright does not
+# go stale in January. The tenants each name their own agency; the apex speaks for the programme.
+PUBLIC_SETTINGS = {
+    "Brand Text": "UFFIS Portal",
+    "Primary Text Hover Color": "#faaf00",
+    "Footer Copyright": f"Copyright \u00a9 {datetime.now(UTC):%Y} UFFIS",
+}
 
 
 def site_settings():
@@ -65,6 +76,21 @@ def pin_public_home():
         print("public: home template pinned to", PUBLIC_HOME_TEMPLATE)
 
 
+def pin_public_branding():
+    """Give the apex the portal's own name and accent instead of the stock Tethys ones."""
+    with schema_context("public"):
+        for name, content in PUBLIC_SETTINGS.items():
+            setting = Setting.objects.filter(name=name).first()
+            if setting is None:
+                print(f"public: no {name} setting to pin")
+                continue
+            if setting.content == content:
+                continue
+            setting.content = content
+            setting.save()
+            print(f"public: {name} pinned to {content}")
+
+
 def apply():
     """Seed the portal site settings into each tenant schema that has not been customised."""
     settings = site_settings()
@@ -85,3 +111,4 @@ def apply():
 if __name__ == "__main__":
     apply()
     pin_public_home()
+    pin_public_branding()
