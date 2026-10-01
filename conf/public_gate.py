@@ -15,6 +15,7 @@ Registered through MIDDLEWARE in portal_config.yml, which Tethys appends after i
 runs after django_tenants has bound the schema and there is a schema to read.
 """
 
+from apex_apps import APEX_APP_PATHS
 from django.conf import settings
 from django.db import connection
 from django.http import Http404
@@ -48,5 +49,23 @@ class PublicSchemaGate:
     def __call__(self, request):
         schema = getattr(connection, "schema_name", None)
         if schema == PUBLIC_SCHEMA and _unprefixed(request.path).startswith(BLOCKED_PREFIXES):
+            raise Http404("not available on this host")
+        return self.get_response(request)
+
+
+class TenantAppGate:
+    """Answer 404 for apex only apps while the request is on a tenant schema.
+
+    Every installed app has URLs on every schema, because the URLconf is shared. Dropping the app's
+    row from a tenant registry hides it from the library but leaves the route, and the apex view
+    takes anonymous visitors, so the path itself is closed here.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        schema = getattr(connection, "schema_name", None)
+        if schema not in (None, PUBLIC_SCHEMA) and _unprefixed(request.path).startswith(APEX_APP_PATHS):
             raise Http404("not available on this host")
         return self.get_response(request)

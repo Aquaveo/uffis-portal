@@ -1,0 +1,128 @@
+{% extends "tenants/public/home.html" %}
+
+{% comment %}
+The apex page. An app fills the viewer block and the page head through viewer_assets. Everything
+the public home shows renders unchanged inside the About UFFIS dialog, so the hero, the agency
+directory and the partner strip have one source and the tenant homes are untouched.
+{% endcomment %}
+
+{% block title %}UFFIS Forecasts{% endblock %}
+
+{% block meta %}
+  {{ block.super }}
+  <meta name="description" content="Hourly flash flood and impact based forecasts from UFFIS, with links to each agency portal.">
+  <link rel="canonical" href="https://uffis.org/">
+{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+  {% block viewer_assets %}{% endblock %}
+  <style id="uffis-apex">
+    .apex-bar {
+      display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: flex-end;
+      max-width: 1200px; margin: 0 auto; padding: 1rem 16px 0;
+    }
+    .apex-link { color: var(--brand); font-weight: 650; text-underline-offset: .25em; }
+    .apex-link:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+
+    .apex-about {
+      width: min(46rem, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh;
+      margin: 0 0 0 auto; padding: 0; border: 0;
+      background: var(--page); color: var(--ink);
+      box-shadow: -8px 0 32px rgba(0, 0, 0, .25);
+    }
+    .apex-about::backdrop { background: rgba(10, 20, 30, .45); }
+    .apex-about-close {
+      position: sticky; top: 0; z-index: 2;
+      display: flex; justify-content: flex-end;
+      padding: .75rem 1rem; background: var(--brand);
+    }
+    .apex-about-close button {
+      padding: .45rem 1rem; border: 1px solid var(--on-brand); border-radius: 4px;
+      background: transparent; color: var(--on-brand); font-weight: 650; cursor: pointer;
+    }
+    .apex-about-close button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    /* No header overlap here */
+    .apex-about .u-hero { --u-header-overlap: 0px; }
+    .apex-about .u-cap-heading { position: static; }
+    .apex-about #portals { scroll-margin-top: 4rem; }
+  </style>
+  <noscript><style>
+    .apex-about:not([open]) { display: block; position: static; width: auto; height: auto; max-height: none; box-shadow: none; }
+    .apex-about-close { display: none; }
+  </style></noscript>
+{% endblock %}
+
+{% block content %}
+<div class="uffis-apex">
+  <nav class="apex-bar" aria-label="UFFIS">
+    <a class="apex-link" href="#about">About UFFIS</a>
+    <a class="apex-link" href="#portals">Agency portals</a>
+  </nav>
+  {% block viewer %}{% endblock %}
+</div>
+<dialog id="about" class="apex-about" aria-labelledby="hero-title">
+  <form method="dialog" class="apex-about-close"><button type="submit">Close</button></form>
+  {{ block.super }}
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script type="module">
+    const panel = document.getElementById("about");
+    const TARGETS = { "#about": null, "#portals": "portals" };
+
+    /**
+     * Open the panel and bring a hash's target into view.
+     * @param {string} hash "#about" or "#portals"
+     */
+    function openPanel(hash) {
+      if (!panel.open) panel.showModal();
+      const id = TARGETS[hash];
+      if (id) document.getElementById(id).scrollIntoView({ block: "start" });
+      else panel.scrollTop = 0;
+    }
+
+    /**
+     * Open the panel when the URL names it; other hashes are ignored.
+     */
+    function followHash() {
+      if (location.hash in TARGETS) openPanel(location.hash);
+    }
+
+    /**
+     * Open from a panel link without adding a history entry.
+     * @param {MouseEvent} event
+     */
+    function onLinkClick(event) {
+      const link = event.target.closest("a[href]");
+      const hash = link && link.getAttribute("href");
+      if (!(hash in TARGETS)) return;
+      event.preventDefault();
+      history.replaceState(null, "", hash);
+      openPanel(hash);
+    }
+
+    /**
+     * Drop the hash once the panel closes, so Back leaves the page.
+     */
+    function clearHash() {
+      if (location.hash in TARGETS) history.replaceState(null, "", location.pathname + location.search);
+    }
+
+    /**
+     * Close when the backdrop itself is clicked.
+     * @param {MouseEvent} event
+     */
+    function onBackdropClick(event) {
+      if (event.target === panel) panel.close();
+    }
+
+    document.addEventListener("click", onLinkClick);
+    panel.addEventListener("click", onBackdropClick);
+    window.addEventListener("hashchange", followHash);
+    panel.addEventListener("close", clearHash);
+    followHash();
+  </script>
+{% endblock %}

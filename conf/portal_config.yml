@@ -51,8 +51,12 @@ settings:
       PORT: 5432
       CONN_MAX_AGE: 0
       DISABLE_SERVER_SIDE_CURSORS: false
+  # Apex app on public schema
+  PUBLIC_SCHEMA_URLCONF: apex_urls
+  UFFIS_OUTPUTS_BASE: https://tito.uffis.org/outputs
   MIDDLEWARE:
     - public_gate.PublicSchemaGate
+    - public_gate.TenantAppGate
   CONTEXT_PROCESSORS:
     - portal_context.tenant_language
   CHANNEL_LAYERS:

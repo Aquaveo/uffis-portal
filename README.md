@@ -20,6 +20,9 @@ conf/portal_config.yml            declarative portal settings, including TENANTS
 conf/portal-config.d/             config hooks, run by the base portal-config.sh at container start
 conf/init.d/                      provisioning hooks, run by the base provision.sh once per release
 conf/register_tenants.py          creates the public tenant and its domain rows
+conf/apex_urls.py                 public schema URLconf: the UFFIS Forecasts app at /, then the portal
+conf/apex_apps.py                 apps that serve the apex only, kept out of every tenant
+local/                            local stack: portal image, Postgres and one tenant, for testing
 conf/portal_storage.py            S3 static storage backend
 tofu/uffis.tfvars.example         infrastructure inputs, tokenized; the real file is gitignored
 tofu/backend.hcl.example          tofu state location, tokenized
@@ -391,6 +394,32 @@ the public portal rather than 404ing. A **400 or 404 anywhere here means somethi
 is the point: under tenancy `TenantMainMiddleware` turns a DisallowedHost into a 404 as well, so
 tolerating 404 at the load balancer would make a misconfigured portal look healthy.
 
+## Run locally
+
+The local stack runs the portal image with Postgres 17 and one tenant, ABMS at `abms.localhost`.
+`conf/` and the app repository are mounted, so template, config and viewer edits show on reload.
+Clone `tethysapp-uffis_forecasts` next to this repository, or set `UFFIS_FORECASTS_SRC`.
+
+```bash
+docker compose -f local/compose.yml up --build -d
+```
+
+Then open `http://localhost:8000/` for the apex and `http://abms.localhost:8000/` for the tenant.
+Logos come from `branding/`, mounted into the static folder. `DEBUG` is on, so runserver serves
+static files and reloads code. Check the panel and live cards with
+`CHROME=chromium node local/apex_smoke.mjs`.
+
+Host checks without a browser:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: uffis.org' http://127.0.0.1:8000/
+curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: abms.localhost' http://127.0.0.1:8000/apps/uffis-forecasts/
+```
+
+The first is 200, the second 404. A Host missing from `ALLOWED_HOSTS` also answers a bare 404.
+`PORTAL_CONF=<path to another conf/>` runs the stack against another checkout's config, for
+comparing rendered pages before and after a change.
+
 ## Day to day
 
 New image: push to `main`, then bump `image_uri` in `tofu/uffis.tfvars` and run the tofu deploy
@@ -545,8 +574,23 @@ tenant because groups live in the tenant schema.
 
 ## The apex
 
-`uffis.org` is the public schema and serves a landing page only. Accounts, apps, the user area and
-the admin all answer 404 there, so nobody can sign up on it and there is nothing to sign in to.
+`uffis.org` is the public schema and serves the forecast viewer only. Accounts, apps, the user area
+and the admin all answer 404 there, so nobody can sign up on it and there is nothing to sign in to.
+
+`/` is the UFFIS Forecasts app (`Aquaveo/tethysapp-uffis_forecasts`). `PUBLIC_SCHEMA_URLCONF` points
+the public schema at `conf/apex_urls.py`, which mounts the app at the root ahead of the portal's own
+patterns; tenants keep `tethys_portal.urls`. The app reads TITO's outputs from
+`https://tito.uffis.org/outputs` (`UFFIS_OUTPUTS_BASE`) in the browser, so `/` makes no outbound
+request and keeps answering the health check when TITO is down. Without the app installed,
+`apex_urls` is just the portal and `/` falls back to the landing page below.
+
+The app's page extends `conf/portal_templates/uffis/apex.html`, which renders the whole landing page
+inside the About UFFIS panel. `#about` and `#portals` open it, so old links to the directory still
+land on it, and with JavaScript off the panel is shown in place.
+
+The app stays out of the tenants. `harvest_tenants.py` drops it from each tenant registry after every
+harvest, `access_groups.py` grants no access to it, and `TenantAppGate` in `public_gate.py` 404s its
+path on every tenant, because the URLconf is shared and the route would otherwise answer there.
 
 The gate is `conf/public_gate.py`, registered through `MIDDLEWARE`. It keys on the schema rather
 than on the hostname, which is what makes it complete: `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is on, so
