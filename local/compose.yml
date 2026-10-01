@@ -1,0 +1,62 @@
+# Local portal: docker compose -f local/compose.yml up
+name: uffis-local
+
+x-portal: &portal
+  image: uffis-portal:local
+  build:
+    context: ..
+  environment:
+    TETHYS_SECRET_KEY: local-dev-only-not-a-secret
+    TETHYS_DB_HOST: db
+    TETHYS_DB_PASSWORD: local-dev-only
+    TETHYS_DB_POOL_MODE: direct
+    TETHYS_DEBUG: "true"
+    PORTAL_ALLOWED_HOSTS: .localhost
+    PORTAL_SUPERUSER_PASSWORD: local-dev-only
+    PYTHONPATH: /opt/portal:/src/uffis_forecasts
+  volumes:
+    - ${PORTAL_CONF:-../conf}:/opt/portal:ro
+    - ${PORTAL_CONF:-../conf}/portal_config.yml:/config/portal_config.yml:ro
+    - ./:/opt/portal-local:ro
+    - ${UFFIS_FORECASTS_SRC:-../../tethysapp-uffis_forecasts}:/src/uffis_forecasts:ro
+    - ../branding/partners:/opt/conda/envs/tethys/lib/python3.12/site-packages/tethys_portal/static/partners:ro
+    - ../branding/hero:/opt/conda/envs/tethys/lib/python3.12/site-packages/tethys_portal/static/hero:ro
+    - ../branding/abms:/opt/conda/envs/tethys/lib/python3.12/site-packages/tethys_portal/static/tenants/abms:ro
+    - ../branding/anacm:/opt/conda/envs/tethys/lib/python3.12/site-packages/tethys_portal/static/tenants/anacm:ro
+    - ../branding/bms:/opt/conda/envs/tethys/lib/python3.12/site-packages/tethys_portal/static/tenants/bms:ro
+    - ../branding/insivumeh:/opt/conda/envs/tethys/lib/python3.12/site-packages/tethys_portal/static/tenants/insivumeh:ro
+    - persist:/home/tethys/persist
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: tethys_default
+      POSTGRES_PASSWORD: local-dev-only
+      POSTGRES_DB: tethys_platform
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "tethys_default", "-d", "tethys_platform"]
+      interval: 2s
+      retries: 30
+
+  provision:
+    <<: *portal
+    command: ["bash", "/opt/portal-local/provision.sh"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    <<: *portal
+    ports:
+      - "8000:8000"
+    depends_on:
+      provision:
+        condition: service_completed_successfully
+
+volumes:
+  db:
+  persist:
