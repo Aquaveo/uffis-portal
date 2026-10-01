@@ -18,12 +18,22 @@ directory and the partner strip have one source and the tenant homes are untouch
   {{ block.super }}
   {% block viewer_assets %}{% endblock %}
   <style id="uffis-apex">
+    html, body { height: 100%; overflow: hidden; }
     .apex-bar {
-      display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: flex-end;
-      max-width: 1200px; margin: 0 auto; padding: 1rem 16px 0;
+      position: fixed; top: 12px; left: 50%; z-index: 1000; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 1.1rem;
+      padding: .45rem 1.1rem; border-radius: 999px;
+      background: var(--brand); box-shadow: 0 4px 18px rgba(0, 0, 0, .2);
     }
-    .apex-link { color: var(--brand); font-weight: 650; text-underline-offset: .25em; }
-    .apex-link:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+    .apex-name { color: var(--on-brand); font-weight: 700; letter-spacing: .02em; }
+    .apex-link { color: var(--on-brand); font-size: .9rem; font-weight: 600; text-underline-offset: .25em; }
+    .apex-link:hover { color: var(--accent); }
+    .apex-link:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    @media (max-width: 640px) {
+      .apex-bar { top: 12px; left: 56px; transform: none; gap: .7rem; padding: .4rem .8rem; }
+      .apex-link { font-size: .78rem; }
+      .apex-name { display: none; }
+    }
 
     .apex-about {
       width: min(46rem, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh;
@@ -53,9 +63,14 @@ directory and the partner strip have one source and the tenant homes are untouch
   </style></noscript>
 {% endblock %}
 
+{% block header %}{% endblock %}
+
+{% block footer %}{% endblock %}
+
 {% block content %}
 <div class="uffis-apex">
   <nav class="apex-bar" aria-label="UFFIS">
+    <span class="apex-name">UFFIS</span>
     <a class="apex-link" href="#about">About UFFIS</a>
     <a class="apex-link" href="#portals">Agency portals</a>
   </nav>

@@ -1,6 +1,7 @@
 /**
- * Browser check of the local apex: the About panel deep link, Esc and
- * the hash, and live forecast cards. Needs the local stack running.
+ * Browser check of the local apex: no portal header or footer, the
+ * About panel deep link, Esc and the hash, and live region freshness.
+ * Needs the local stack running.
  * Run: CHROME=chromium node local/apex_smoke.mjs [base URL]
  */
 
@@ -91,11 +92,22 @@ async function checkPanel({ evaluate, send }) {
 }
 
 /**
- * Check that live forecast cards load for all five countries.
+ * Check the map fills the page with no portal header or footer.
  * @param {(expression: string) => Promise<any>} evaluate
  */
-async function checkCards(evaluate) {
-  await waitFor(evaluate, 'document.querySelectorAll("#status .card").length === 5', "five status cards");
+async function checkLayout(evaluate) {
+  const chrome = await evaluate('Boolean(document.querySelector(".site-header, .site-footer"))');
+  if (chrome) throw new Error("portal header or footer is on the page");
+  const full = await evaluate('(() => { const r = document.getElementById("map").getBoundingClientRect(); return r.width === innerWidth && r.height === innerHeight; })()');
+  if (!full) throw new Error("map does not fill the window");
+}
+
+/**
+ * Check that every region chip carries a live freshness level.
+ * @param {(expression: string) => Promise<any>} evaluate
+ */
+async function checkRegions(evaluate) {
+  await waitFor(evaluate, 'document.querySelectorAll("#regions .chip.ok, #regions .chip.late, #regions .chip.stale").length === 5', "five live region chips");
 }
 
 const { chrome, devtools } = await launchChrome();
@@ -103,10 +115,11 @@ let failed = false;
 try {
   const page = await openPage(devtools, `${BASE}/#portals`);
   await checkPanel(page);
-  await checkCards(page.evaluate);
-  const cards = await page.evaluate('[...document.querySelectorAll("#status .card")].map((c) => c.querySelector("h3").textContent + ": " + c.querySelector(".age").textContent).join("; ")');
+  await checkLayout(page.evaluate);
+  await checkRegions(page.evaluate);
+  const regions = await page.evaluate('[...document.querySelectorAll("#regions .chip")].map((c) => c.textContent + " " + c.className.replace("chip ", "")).join(", ")');
   page.close();
-  console.log(`apex smoke ok: panel, directory, Esc, hash; ${cards}`);
+  console.log(`apex smoke ok: full map, panel, directory, Esc, hash; ${regions}`);
 } catch (error) {
   failed = true;
   console.error(`apex smoke failed: ${error.message}`);
