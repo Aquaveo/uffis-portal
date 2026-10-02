@@ -4,7 +4,7 @@
 {% comment %}
 The apex. Every account, app and admin path 404s on the public schema, so this page has no portal
 controls of its own. Its job is to send a visitor to the right agency, which is what the directory
-below does. The hero's one button opens the UFFIS Viewer at /uffis_viewer/ rather than a login.
+below does. The hero's one button opens the UFFIS Viewer at /viewer/ rather than a login.
 
 The directory comes from conf/agencies.py, the one list the apex also reads. Each entry carries
 the agency's own name in the agency's own language, which the tenant table does not hold.
@@ -16,7 +16,7 @@ the agency's own name in the agency's own language, which the tenant table does 
 
 {% block hero_actions %}
   <div class="u-actions">
-    <a href="/uffis_viewer/" class="u-btn u-btn-solid">Go to UFFIS Viewer</a>
+    <a href="/viewer/" class="u-btn u-btn-solid">Go to UFFIS Viewer</a>
   </div>
 {% endblock %}
 

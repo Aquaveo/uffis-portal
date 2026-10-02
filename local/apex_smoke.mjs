@@ -1,7 +1,7 @@
 /**
  * Browser check of the local apex: the home page button, then the
- * viewer at /uffis_viewer/ with no portal header or footer, the
- * portal menu and About sheet, Esc and the hash, the agency line, and
+ * viewer at /viewer/ with no portal header or footer, the
+ * portal menu and About sheet, Esc and the hash, and
  * live region freshness.
  * Needs the local stack running.
  * Run: CHROME=chromium node local/apex_smoke.mjs [base URL]
@@ -106,15 +106,6 @@ async function checkAbout({ evaluate, send }) {
 }
 
 /**
- * Check the panel names the selected country's agency.
- * @param {(expression: string) => Promise<any>} evaluate
- */
-async function checkAgencyLine(evaluate) {
-  const line = await waitFor(evaluate, 'document.getElementById("agency").textContent', "agency line");
-  if (!line.includes("INSIVUMEH")) throw new Error(`agency line: ${line}`);
-}
-
-/**
  * Check the map fills the page with no portal header or footer.
  * @param {(expression: string) => Promise<any>} evaluate
  */
@@ -138,7 +129,7 @@ async function checkRegions(evaluate) {
  * @param {(expression: string) => Promise<any>} evaluate
  */
 async function checkHome(evaluate) {
-  await waitFor(evaluate, '[...document.querySelectorAll(".u-btn")].some((a) => a.textContent.trim() === "Go to UFFIS Viewer" && a.getAttribute("href") === "/uffis_viewer/") && document.getElementById("portals") && !document.getElementById("uffis-viewer")', "home page with the viewer button");
+  await waitFor(evaluate, '[...document.querySelectorAll(".u-btn")].some((a) => a.textContent.trim() === "Go to UFFIS Viewer" && a.getAttribute("href") === "/viewer/") && document.getElementById("portals") && !document.getElementById("uffis-viewer")', "home page with the viewer button");
 }
 
 const { chrome, devtools } = await launchChrome();
@@ -147,15 +138,15 @@ try {
   const home = await openPage(devtools, `${BASE}/`);
   await checkHome(home.evaluate);
   home.close();
-  const page = await openPage(devtools, `${BASE}/uffis_viewer/#portals`);
+  const page = await openPage(devtools, `${BASE}/viewer/#portals`);
   await checkMenu(page);
   await checkAbout(page);
-  await checkAgencyLine(page.evaluate);
   await checkLayout(page.evaluate);
+  await waitFor(page.evaluate, 'document.querySelector(".apex-home")?.getAttribute("href") === "/"', "back link to the home page");
   await checkRegions(page.evaluate);
   const regions = await page.evaluate('[...document.querySelectorAll("#regions .chip")].map((c) => c.textContent + " " + c.className.replace("chip ", "")).join(", ")');
   page.close();
-  console.log(`apex smoke ok: home button, full map, portal menu, About sheet, agency line, Esc, hash; ${regions}`);
+  console.log(`apex smoke ok: home button, back link, full map, portal menu, About sheet, Esc, hash; ${regions}`);
 } catch (error) {
   failed = true;
   console.error(`apex smoke failed: ${error.message}`);

@@ -559,15 +559,16 @@ tenant because groups live in the tenant schema.
 
 ## The apex
 
-`uffis.org` is the public schema and serves the forecast viewer only. Accounts, apps, the user area
-and the admin all answer 404 there, so nobody can sign up on it and there is nothing to sign in to.
+`uffis.org` is the public schema: the home page at `/` and the forecast viewer at `/viewer/`.
+Accounts, apps, the user area and the admin all answer 404 there, so nobody can sign up on it and
+there is nothing to sign in to.
 
-`/` is the UFFIS Forecasts app (`Aquaveo/tethysapp-uffis_forecasts`), mounted by `conf/apex_urls.py`
-through `PUBLIC_SCHEMA_URLCONF`; tenants keep `tethys_portal.urls`. The map reads TITO's outputs in the
-browser, so `/` answers the health check even when TITO is down. `uffis/apex.html` frames it with the
-Agency portals menu (`#portals`) and the About sheet (`#about`); agencies are listed once, in
-`conf/agencies.py`. Tenants never see the app: `harvest_tenants.py` drops it after every harvest,
-`access_groups.py` skips it, and `TenantAppGate` 404s its path.
+`/viewer/` is the UFFIS Forecasts app (`Aquaveo/tethysapp-uffis_forecasts`, pinned in the Dockerfile),
+mounted by `conf/apex_urls.py` through `PUBLIC_SCHEMA_URLCONF`; tenants keep `tethys_portal.urls`.
+`/uffis_viewer/` redirects there. The map reads TITO's outputs in the browser. `uffis/apex.html` frames
+it with a back link home, the Agency portals menu (`#portals`) and the About sheet (`#about`); agencies
+are listed once, in `conf/agencies.py`. Tenants never see the app: `harvest_tenants.py` drops it after
+every harvest, `access_groups.py` skips it, and `TenantAppGate` 404s its path.
 
 The gate is `conf/public_gate.py`, registered through `MIDDLEWARE`. It keys on the schema rather
 than on the hostname, which is what makes it complete: `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is on, so
