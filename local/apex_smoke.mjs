@@ -87,7 +87,7 @@ async function pressEscape(send) {
 async function checkMenu({ evaluate, send }) {
   await waitFor(evaluate, '!document.getElementById("portals-menu").hidden', "portal menu open from #portals");
   const links = await evaluate('[...document.querySelectorAll("#portals-menu a.apex-agency")].map((a) => a.host).join(",")');
-  if (links.split(",").length !== 5) throw new Error(`agency links: ${links}`);
+  if (links.split(",").length !== 4) throw new Error(`agency links: ${links}`);
   await pressEscape(send);
   await waitFor(evaluate, 'document.getElementById("portals-menu").hidden && location.hash === "" && document.activeElement.id === "portals-button"', "Esc closes the menu, clears the hash, refocuses");
 }
