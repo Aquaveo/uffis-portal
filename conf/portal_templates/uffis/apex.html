@@ -111,15 +111,26 @@ and is also handed to the app as JSON, so the viewer can name the selected count
 
     .apex-partners { margin-top: 2.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
     .apex-partners h3 { margin: 0 0 1rem; color: var(--muted); font-size: .85rem; font-weight: 600; }
+    /* Logo wall: wide marks left */
     .apex-partners ul {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 1.1rem 1.75rem;
+      display: grid; grid-template-columns: 5fr 3fr; gap: 1px;
       margin: 0; padding: 0; list-style: none;
+      background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
     }
-    .apex-partners li { max-width: 100%; }
-    .apex-partners a { display: flex; align-items: center; min-height: 2.75rem; border-radius: 4px; }
-    .apex-partners a:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
-    .apex-partners img { display: block; width: auto; max-width: 100%; height: 2.4rem; object-fit: contain; }
-    .apex-partners .u-mark-compact { height: 2rem; }
+    .apex-partners li { display: flex; min-width: 0; background: var(--surface); }
+    .apex-partners .u-span { grid-column: 1 / -1; }
+    .apex-partners a {
+      display: flex; flex: 1; align-items: center; justify-content: center;
+      min-height: 4.75rem; padding: .6rem .7rem;
+    }
+    .apex-partners a:focus-visible { outline: 3px solid var(--brand); outline-offset: -3px; border-radius: 4px; }
+    .apex-partners img {
+      display: block; width: auto; max-width: 100%; height: 2.4rem; object-fit: contain;
+      opacity: .88; transition: opacity .2s ease-out;
+    }
+    .apex-partners a:hover img, .apex-partners a:focus-visible img { opacity: 1; }
+    .apex-partners .u-mark-compact { height: 2.1rem; }
+    .apex-partners .u-mark-wide { height: 3rem; }
 
     @media (max-width: 640px) {
       .apex-bar { left: 56px; transform: none; padding-left: .8rem; }
@@ -133,7 +144,7 @@ and is also handed to the app as JSON, so the viewer can name the selected count
       .apex-bar { top: 10px; }
     }
     @media (pointer: coarse) and (max-width: 640px) { .apex-bar { left: 68px; } }
-    @media (prefers-reduced-motion: reduce) { .apex-btn .caret { transition: none; } }
+    @media (prefers-reduced-motion: reduce) { .apex-btn .caret, .apex-partners img { transition: none; } }
   </style>
   <noscript><style>
     .apex-menu[hidden] { display: block; }
