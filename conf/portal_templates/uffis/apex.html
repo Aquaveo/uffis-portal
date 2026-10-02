@@ -1,26 +1,28 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% comment %}
 The apex page. An app fills the viewer block and the page head through viewer_assets. The portal
 owns the frame around it: the agency portal menu in the top bar, and a short About sheet written for
-a panel rather than the landing page squeezed into one. The agency list comes from conf/agencies.py
-and is also handed to the app as JSON, so the viewer can name the selected country's agency.
+a panel rather than the landing page squeezed into one. The agency list comes from conf/agencies.py.
+Text is translated through Django i18n; the catalog script loads before the app's assets so its
+modules can translate as they load.
 {% endcomment %}
 
-{% block htmltag %}<html lang="en" class="h-100">{% endblock %}
+{% block htmltag %}{% get_current_language as current %}<html lang="{{ current }}" class="h-100">{% endblock %}
 
-{% block title %}UFFIS Forecasts{% endblock %}
+{% block title %}{% translate "UFFIS Forecasts" %}{% endblock %}
 
 {% block meta %}
   {{ block.super }}
-  <meta name="description" content="Hourly flash flood and impact based forecasts from UFFIS, with links to each agency portal.">
+  <meta name="description" content="{% translate "Hourly flash flood and impact based forecasts from UFFIS, with links to each agency portal." %}">
   <link rel="canonical" href="https://uffis.org/">
 {% endblock %}
 
 {% block styles %}
   {{ block.super }}
   {% include "uffis/_palette.html" %}
+  <script src="/i18n/js/"></script>
   {% block viewer_assets %}{% endblock %}
   <style id="uffis-apex">
     html, body { height: 100%; overflow: hidden; }
@@ -47,6 +49,21 @@ and is also handed to the app as JSON, so the viewer can name the selected count
     .apex-btn:hover, .apex-btn[aria-expanded="true"] { background: color-mix(in oklch, var(--on-brand) 16%, transparent); }
     .apex-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     .apex-short { display: none; }
+    .apex-lang { position: relative; }
+    .apex-lang summary { display: inline-flex; align-items: center; gap: .3rem; list-style: none; }
+    .apex-lang summary::-webkit-details-marker { display: none; }
+    .apex-lang[open] summary { background: color-mix(in oklch, var(--on-brand) 16%, transparent); }
+    .apex-lang-menu {
+      position: absolute; top: calc(100% + .5rem); right: 0; min-width: 9rem; margin: 0; padding: .35rem; list-style: none;
+      background: var(--surface); border-radius: 10px; box-shadow: 0 12px 36px rgba(0, 0, 0, .22);
+    }
+    .apex-lang-menu a {
+      display: flex; align-items: center; min-height: 2.25rem; padding: .35rem .75rem; border-radius: 6px;
+      color: var(--ink); font-size: .9rem; text-decoration: none;
+    }
+    .apex-lang-menu a:hover { background: color-mix(in oklch, var(--brand) 10%, var(--surface)); }
+    .apex-lang-menu a[aria-current] { color: var(--brand); font-weight: 700; }
+    .apex-lang-menu a:focus-visible { outline: 3px solid var(--brand); outline-offset: -2px; }
     .apex-btn .caret { display: inline-block; margin-left: .3rem; transition: transform .2s var(--ease); }
     .apex-btn[aria-expanded="true"] .caret { transform: rotate(180deg); }
 
@@ -165,11 +182,11 @@ and is also handed to the app as JSON, so the viewer can name the selected count
 
 {% block content %}
 <nav class="apex-bar" aria-label="UFFIS">
-  <a class="apex-home" href="/" aria-label="Back to the UFFIS home page" title="Back to the UFFIS home page"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="apex-name">UFFIS</span></a>
-  <button id="about-button" class="apex-btn" type="button" aria-controls="about" aria-expanded="false">About</button>
-  <button id="portals-button" class="apex-btn" type="button" aria-controls="portals-menu" aria-expanded="false"><span class="apex-long">Agency p</span><span class="apex-short">P</span>ortals<span class="caret" aria-hidden="true">▾</span></button>
+  <a class="apex-home" href="/" aria-label="{% translate "Back to the UFFIS home page" %}" title="{% translate "Back to the UFFIS home page" %}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="apex-name">UFFIS</span></a>
+  <button id="about-button" class="apex-btn" type="button" aria-controls="about" aria-expanded="false">{% translate "About" %}</button>
+  <button id="portals-button" class="apex-btn" type="button" aria-controls="portals-menu" aria-expanded="false"><span class="apex-long">{% translate "Agency portals" %}</span><span class="apex-short">{% translate "Portals" %}</span><span class="caret" aria-hidden="true">▾</span></button>
   <div id="portals-menu" class="apex-menu" hidden>
-    <p class="apex-menu-head">Each service runs its own portal. Accounts are held there.</p>
+    <p class="apex-menu-head">{% translate "Each service runs its own portal. Accounts are held there." %}</p>
     <ul>
       {% for agency in agencies %}
       <li>
@@ -187,6 +204,7 @@ and is also handed to the app as JSON, so the viewer can name the selected count
       {% endfor %}
     </ul>
   </div>
+  {% include "uffis/_language_switch.html" with compact=True %}
 </nav>
 
 {% block viewer %}{% endblock %}
@@ -195,31 +213,31 @@ and is also handed to the app as JSON, so the viewer can name the selected count
   <div class="apex-about-inner">
     <header class="apex-about-head">
       {% if site_globals.brand_image %}<img src="{% if 'http' in site_globals.brand_image %}{{ site_globals.brand_image }}{% else %}{% static site_globals.brand_image %}{% endif %}" alt="" loading="lazy" decoding="async">{% endif %}
-      <h2 id="about-title" tabindex="-1">About UFFIS</h2>
-      <button id="about-close" class="apex-close" type="button">Close</button>
+      <h2 id="about-title" tabindex="-1">{% translate "About UFFIS" %}</h2>
+      <button id="about-close" class="apex-close" type="button">{% translate "Close" %}</button>
     </header>
 
-    <p class="apex-lede">The Urban Flood Forecasting Information System runs flash flood and impact based forecasts every hour for various national meteorological and hydrological services, and gives each service its own portal.</p>
+    <p class="apex-lede">{% translate "The Urban Flood Forecasting Information System runs flash flood and impact based forecasts every hour for various national meteorological and hydrological services, and gives each service its own portal." %}</p>
 
     <ol class="apex-steps">
       <li>
-        <strong>Every hour</strong>
-        <p>EF5 routes satellite rainfall, a nowcast and an ensemble forecast through each country's catchments.</p>
+        <strong>{% translate "Every hour" %}</strong>
+        <p>{% translate "EF5 routes satellite rainfall, a nowcast and an ensemble forecast through each country's catchments." %}</p>
       </li>
       <li>
-        <strong>Forecasts and impact</strong>
-        <p>Streamflow, soil saturation, flood probability and impact on buildings, roads and people are published openly. This map reads them directly.</p>
+        <strong>{% translate "Forecasts and impact" %}</strong>
+        <p>{% translate "Streamflow, soil saturation, flood probability and impact on buildings, roads and people are published openly. This map reads them directly." %}</p>
       </li>
       <li>
-        <strong>A portal for each service</strong>
-        <p>Each service has its own custom portal and dashboards for decision making.</p>
+        <strong>{% translate "A portal for each service" %}</strong>
+        <p>{% translate "Each service has its own custom portal and dashboards for decision making." %}</p>
       </li>
     </ol>
 
-    <a class="apex-cta" href="#portals">Find your agency portal</a>
+    <a class="apex-cta" href="#portals">{% translate "Find your agency portal" %}</a>
 
     <section class="apex-partners" aria-labelledby="partners-title">
-      <h3 id="partners-title">A collaboration of</h3>
+      <h3 id="partners-title">{% translate "A collaboration of" %}</h3>
       <ul>
         {% include "uffis/_partner_marks.html" %}
       </ul>

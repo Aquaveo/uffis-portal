@@ -10,6 +10,8 @@ LANGUAGE_CODE is portal wide, which leaves the schema as the only thing that kno
 """
 
 from django.db import connection
+from django.utils import translation
+from public_gate import PUBLIC_SCHEMA
 
 DEFAULT_LANGUAGE = "en"
 
@@ -22,6 +24,8 @@ TENANT_LANGUAGES = {
 
 
 def tenant_language(request):
-    """Return the language tag for the tenant bound to this connection."""
+    """Return the language tag for the page: the visitor's choice on the apex, else the tenant's."""
     schema = getattr(connection, "schema_name", None)
+    if schema == PUBLIC_SCHEMA:
+        return {"tenant_language": translation.get_language() or DEFAULT_LANGUAGE}
     return {"tenant_language": TENANT_LANGUAGES.get(schema, DEFAULT_LANGUAGE)}

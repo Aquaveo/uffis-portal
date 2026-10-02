@@ -1,4 +1,4 @@
-"""URLs for the public schema: the apex app at /viewer/, then the whole portal.
+"""URLs for the public schema: the viewer's translations, the apex app at /viewer/, then the whole portal.
 
 django-tenants switches to this module for the public schema, for unknown hosts and for the load
 balancer health check. Tenants keep tethys_portal.urls. The portal patterns follow the app so every
@@ -7,8 +7,9 @@ app installed the list is just the portal. Either way / is the public home page.
 """
 
 from apex_apps import APEX_APP, APEX_APP_ROOT, OLD_APP_ROOT
-from django.urls import include, re_path
+from django.urls import include, path, re_path
 from django.views.generic import RedirectView
+from django.views.i18n import JavaScriptCatalog
 from tethys_apps.harvester import SingletonHarvester
 from tethys_portal import urls as portal_urls
 
@@ -24,7 +25,11 @@ def apex_patterns():
     ]
 
 
-urlpatterns = apex_patterns() + portal_urls.urlpatterns
+urlpatterns = [
+    path("i18n/js/", JavaScriptCatalog.as_view(), name="javascript-catalog"),
+    *apex_patterns(),
+    *portal_urls.urlpatterns,
+]
 
 handler400 = portal_urls.handler400
 handler403 = portal_urls.handler403

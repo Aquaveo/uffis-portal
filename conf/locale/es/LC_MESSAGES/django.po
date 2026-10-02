@@ -1,0 +1,155 @@
+# UFFIS Portal translations (es).
+msgid ""
+msgstr ""
+"Project-Id-Version: UFFIS Portal\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-02 16:14-0500\n"
+"PO-Revision-Date: 2026-10-02 00:00+0000\n"
+"Last-Translator: UFFIS <uffis@aquaveo.com>\n"
+"Language-Team: UFFIS\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Flood forecasting support for warning services"
+msgstr "Apoyo al pronóstico de inundaciones para los servicios de alerta"
+
+msgid ""
+"UFFIS gives each participating national meteorological and hydrological "
+"service its own forecasting portal, for its own catchments and its own duty "
+"desk."
+msgstr ""
+"UFFIS ofrece a cada servicio meteorológico e hidrológico nacional "
+"participante su propio portal de pronóstico, para sus propias cuencas y su "
+"propia sala de pronóstico."
+
+msgid "Go to UFFIS Viewer"
+msgstr "Ir al visor UFFIS"
+
+msgid "Agency portals"
+msgstr "Portales de los servicios"
+
+msgid ""
+"Each service runs its own portal. Accounts are held there, and are arranged "
+"by the service itself."
+msgstr ""
+"Cada servicio administra su propio portal. Las cuentas están allí y las "
+"gestiona el propio servicio."
+
+msgid "How the programme works"
+msgstr "Cómo funciona el programa"
+
+msgid "One system, operated separately by each participating service."
+msgstr "Un solo sistema, operado por separado por cada servicio participante."
+
+msgid "A portal for each service"
+msgstr "Un portal para cada servicio"
+
+msgid ""
+"Every participating service runs its own portal, with its own accounts and "
+"its own data. Nothing crosses between them."
+msgstr ""
+"Cada servicio participante administra su propio portal, con sus propias "
+"cuentas y sus propios datos. Nada pasa de uno a otro."
+
+msgid "Shared forecasting, local catchments"
+msgstr "Pronóstico compartido, cuencas locales"
+
+msgid ""
+"The same rainfall, streamflow and impact modelling runs behind every portal,"
+" configured for the rivers each service is responsible for."
+msgstr ""
+"El mismo modelado de lluvia, caudal e impactos funciona detrás de cada "
+"portal, configurado para los ríos a cargo de cada servicio."
+
+msgid "Built around the duty desk"
+msgstr "Pensado para la sala de pronóstico"
+
+msgid ""
+"Forecasters arrange the views their shift needs and share them with the "
+"people who act on the warning."
+msgstr ""
+"Los pronosticadores organizan las vistas que necesita su turno y las "
+"comparten con quienes actúan ante la alerta."
+
+msgid "Language"
+msgstr "Idioma"
+
+msgid "UFFIS Forecasts"
+msgstr "Pronósticos UFFIS"
+
+msgid ""
+"Hourly flash flood and impact based forecasts from UFFIS, with links to each"
+" agency portal."
+msgstr ""
+"Pronósticos horarios de crecidas repentinas y pronósticos basados en "
+"impactos de UFFIS, con enlaces al portal de cada servicio."
+
+msgid "Back to the UFFIS home page"
+msgstr "Volver al inicio de UFFIS"
+
+msgid "About"
+msgstr "Acerca de"
+
+msgid "Portals"
+msgstr "Portales"
+
+msgid "Each service runs its own portal. Accounts are held there."
+msgstr "Cada servicio administra su propio portal. Las cuentas están allí."
+
+msgid "About UFFIS"
+msgstr "Acerca de UFFIS"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid ""
+"The Urban Flood Forecasting Information System runs flash flood and impact "
+"based forecasts every hour for various national meteorological and "
+"hydrological services, and gives each service its own portal."
+msgstr ""
+"El Sistema de Información para el Pronóstico de Inundaciones Urbanas genera "
+"cada hora pronósticos de crecidas repentinas y pronósticos basados en "
+"impactos para varios servicios meteorológicos e hidrológicos nacionales, y "
+"ofrece a cada servicio su propio portal."
+
+msgid "Every hour"
+msgstr "Cada hora"
+
+msgid ""
+"EF5 routes satellite rainfall, a nowcast and an ensemble forecast through "
+"each country's catchments."
+msgstr ""
+"EF5 transita la lluvia satelital, un pronóstico inmediato y un pronóstico "
+"por ensamble a través de las cuencas de cada país."
+
+msgid "Forecasts and impact"
+msgstr "Pronósticos e impactos"
+
+msgid ""
+"Streamflow, soil saturation, flood probability and impact on buildings, "
+"roads and people are published openly. This map reads them directly."
+msgstr ""
+"El caudal, la saturación del suelo, la probabilidad de inundación y el "
+"impacto en edificios, carreteras y personas se publican abiertamente. Este "
+"mapa los lee directamente."
+
+msgid ""
+"Each service has its own custom portal and dashboards for decision making."
+msgstr ""
+"Cada servicio tiene su propio portal personalizado y tableros para la toma "
+"de decisiones."
+
+msgid "Find your agency portal"
+msgstr "Encuentre el portal de su servicio"
+
+msgid "A collaboration of"
+msgstr "Una colaboración de"
+
+msgid "Urban Flood Forecasting Information System"
+msgstr "Sistema de Información para el Pronóstico de Inundaciones Urbanas"
+
+msgid "Programme partners"
+msgstr "Socios del programa"

@@ -1,5 +1,5 @@
 {% extends "uffis/home.html" %}
-{% load static %}
+{% load static i18n %}
 
 {% comment %}
 The apex. Every account, app and admin path 404s on the public schema, so this page has no portal
@@ -10,22 +10,24 @@ The directory comes from conf/agencies.py, the one list the apex also reads. Eac
 the agency's own name in the agency's own language, which the tenant table does not hold.
 {% endcomment %}
 
-{% block hero_title %}Flood forecasting support for warning services{% endblock %}
+{% block hero_title %}{% translate "Flood forecasting support for warning services" %}{% endblock %}
 
-{% block hero_lead %}UFFIS gives each participating national meteorological and hydrological service its own forecasting portal, for its own catchments and its own duty desk.{% endblock %}
+{% block hero_lead %}{% translate "UFFIS gives each participating national meteorological and hydrological service its own forecasting portal, for its own catchments and its own duty desk." %}{% endblock %}
+
+{% block hero_tools %}{% include "uffis/_language_switch.html" %}{% endblock %}
 
 {% block hero_actions %}
   <div class="u-actions">
-    <a href="/viewer/" class="u-btn u-btn-solid">Go to UFFIS Viewer</a>
+    <a href="/viewer/" class="u-btn u-btn-solid">{% translate "Go to UFFIS Viewer" %}</a>
   </div>
 {% endblock %}
 
 {% block after_hero %}
 <section class="u-portals" id="portals" aria-labelledby="portals-title">
   <div class="u-portals-inner">
-    <h2 id="portals-title">Agency portals</h2>
+    <h2 id="portals-title">{% translate "Agency portals" %}</h2>
     <span class="u-cap-rule" aria-hidden="true"></span>
-    <p class="u-portals-lede">Each service runs its own portal. Accounts are held there, and are arranged by the service itself.</p>
+    <p class="u-portals-lede">{% translate "Each service runs its own portal. Accounts are held there, and are arranged by the service itself." %}</p>
 
     <ul class="u-portal-grid">
       {% for agency in agencies %}
@@ -53,30 +55,30 @@ the agency's own name in the agency's own language, which the tenant table does 
 </section>
 {% endblock %}
 
-{% block capabilities_heading %}How the programme works{% endblock %}
-{% block capabilities_lede %}One system, operated separately by each participating service.{% endblock %}
+{% block capabilities_heading %}{% translate "How the programme works" %}{% endblock %}
+{% block capabilities_lede %}{% translate "One system, operated separately by each participating service." %}{% endblock %}
 
 {% block capabilities_list %}
   <ol class="u-cap-list">
     <li class="u-cap">
       <div class="u-cap-num" aria-hidden="true"></div>
       <div>
-        <h3>A portal for each service</h3>
-        <p>Every participating service runs its own portal, with its own accounts and its own data. Nothing crosses between them.</p>
+        <h3>{% translate "A portal for each service" %}</h3>
+        <p>{% translate "Every participating service runs its own portal, with its own accounts and its own data. Nothing crosses between them." %}</p>
       </div>
     </li>
     <li class="u-cap">
       <div class="u-cap-num" aria-hidden="true"></div>
       <div>
-        <h3>Shared forecasting, local catchments</h3>
-        <p>The same rainfall, streamflow and impact modelling runs behind every portal, configured for the rivers each service is responsible for.</p>
+        <h3>{% translate "Shared forecasting, local catchments" %}</h3>
+        <p>{% translate "The same rainfall, streamflow and impact modelling runs behind every portal, configured for the rivers each service is responsible for." %}</p>
       </div>
     </li>
     <li class="u-cap">
       <div class="u-cap-num" aria-hidden="true"></div>
       <div>
-        <h3>Built around the duty desk</h3>
-        <p>Forecasters arrange the views their shift needs and share them with the people who act on the warning.</p>
+        <h3>{% translate "Built around the duty desk" %}</h3>
+        <p>{% translate "Forecasters arrange the views their shift needs and share them with the people who act on the warning." %}</p>
       </div>
     </li>
   </ol>
@@ -90,6 +92,16 @@ the agency's own name in the agency's own language, which the tenant table does 
        Tethys's header keeps a whole upstream template out of this repo; display none also takes
        it out of the tab order and the accessibility tree, so it is not merely invisible. */
     .site-header a[href*="/accounts/login"] { display: none; }
+
+    .u-lang { display: flex; justify-content: flex-end; gap: .25rem; margin: 0 0 1.25rem; }
+    .u-lang a {
+      display: inline-flex; align-items: center; min-height: 2rem; padding: .25rem .7rem; border-radius: 999px;
+      color: var(--on-brand); font-size: .85rem; font-weight: 600; text-decoration: none;
+    }
+    .u-lang a:hover { background: color-mix(in oklch, var(--on-brand) 14%, transparent); }
+    .u-lang a[aria-current] { background: color-mix(in oklch, var(--on-brand) 22%, transparent); }
+    .u-lang a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    @media (pointer: coarse) { .u-lang a { min-height: 44px; } }
 
     .u-portals { border-top: 1px solid var(--line); }
     .u-portals-inner { max-width: 68rem; margin: 0 auto; padding: clamp(3rem, 6vw, 5rem) 1.5rem; }

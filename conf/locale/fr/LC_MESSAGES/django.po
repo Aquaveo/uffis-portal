@@ -1,0 +1,156 @@
+# UFFIS Portal translations (fr).
+msgid ""
+msgstr ""
+"Project-Id-Version: UFFIS Portal\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-02 16:14-0500\n"
+"PO-Revision-Date: 2026-10-02 00:00+0000\n"
+"Last-Translator: UFFIS <uffis@aquaveo.com>\n"
+"Language-Team: UFFIS\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Flood forecasting support for warning services"
+msgstr "Appui à la prévision des crues pour les services d'alerte"
+
+msgid ""
+"UFFIS gives each participating national meteorological and hydrological "
+"service its own forecasting portal, for its own catchments and its own duty "
+"desk."
+msgstr ""
+"UFFIS donne à chaque service météorologique et hydrologique national "
+"participant son propre portail de prévision, pour ses propres bassins "
+"versants et sa propre salle de veille."
+
+msgid "Go to UFFIS Viewer"
+msgstr "Ouvrir le visualiseur UFFIS"
+
+msgid "Agency portals"
+msgstr "Portails des services"
+
+msgid ""
+"Each service runs its own portal. Accounts are held there, and are arranged "
+"by the service itself."
+msgstr ""
+"Chaque service gère son propre portail. Les comptes y sont hébergés et sont "
+"attribués par le service lui-même."
+
+msgid "How the programme works"
+msgstr "Fonctionnement du programme"
+
+msgid "One system, operated separately by each participating service."
+msgstr "Un seul système, exploité séparément par chaque service participant."
+
+msgid "A portal for each service"
+msgstr "Un portail pour chaque service"
+
+msgid ""
+"Every participating service runs its own portal, with its own accounts and "
+"its own data. Nothing crosses between them."
+msgstr ""
+"Chaque service participant gère son propre portail, avec ses propres comptes"
+" et ses propres données. Rien ne passe de l'un à l'autre."
+
+msgid "Shared forecasting, local catchments"
+msgstr "Une prévision partagée, des bassins locaux"
+
+msgid ""
+"The same rainfall, streamflow and impact modelling runs behind every portal,"
+" configured for the rivers each service is responsible for."
+msgstr ""
+"La même modélisation de la pluie, des débits et des impacts fonctionne "
+"derrière chaque portail, configurée pour les cours d'eau dont chaque service"
+" a la charge."
+
+msgid "Built around the duty desk"
+msgstr "Pensé pour la salle de veille"
+
+msgid ""
+"Forecasters arrange the views their shift needs and share them with the "
+"people who act on the warning."
+msgstr ""
+"Les prévisionnistes organisent les vues dont leur équipe a besoin et les "
+"partagent avec ceux qui agissent sur l'alerte."
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "UFFIS Forecasts"
+msgstr "Prévisions UFFIS"
+
+msgid ""
+"Hourly flash flood and impact based forecasts from UFFIS, with links to each"
+" agency portal."
+msgstr ""
+"Prévisions horaires des crues éclair et prévisions basées sur l'impact "
+"d'UFFIS, avec des liens vers le portail de chaque service."
+
+msgid "Back to the UFFIS home page"
+msgstr "Retour à l'accueil d'UFFIS"
+
+msgid "About"
+msgstr "À propos"
+
+msgid "Portals"
+msgstr "Portails"
+
+msgid "Each service runs its own portal. Accounts are held there."
+msgstr "Chaque service gère son propre portail. Les comptes y sont hébergés."
+
+msgid "About UFFIS"
+msgstr "À propos d'UFFIS"
+
+msgid "Close"
+msgstr "Fermer"
+
+msgid ""
+"The Urban Flood Forecasting Information System runs flash flood and impact "
+"based forecasts every hour for various national meteorological and "
+"hydrological services, and gives each service its own portal."
+msgstr ""
+"Le Système d'information pour la prévision des crues urbaines produit chaque"
+" heure des prévisions de crues éclair et des prévisions basées sur l'impact "
+"pour plusieurs services météorologiques et hydrologiques nationaux, et donne"
+" à chaque service son propre portail."
+
+msgid "Every hour"
+msgstr "Chaque heure"
+
+msgid ""
+"EF5 routes satellite rainfall, a nowcast and an ensemble forecast through "
+"each country's catchments."
+msgstr ""
+"EF5 propage la pluie satellitaire, une prévision immédiate et une prévision "
+"d'ensemble dans les bassins versants de chaque pays."
+
+msgid "Forecasts and impact"
+msgstr "Prévisions et impacts"
+
+msgid ""
+"Streamflow, soil saturation, flood probability and impact on buildings, "
+"roads and people are published openly. This map reads them directly."
+msgstr ""
+"Les débits, la saturation du sol, la probabilité d'inondation et l'impact "
+"sur les bâtiments, les routes et les personnes sont publiés en accès libre. "
+"Cette carte les lit directement."
+
+msgid ""
+"Each service has its own custom portal and dashboards for decision making."
+msgstr ""
+"Chaque service dispose de son propre portail personnalisé et de tableaux de "
+"bord pour la prise de décision."
+
+msgid "Find your agency portal"
+msgstr "Trouver le portail de votre service"
+
+msgid "A collaboration of"
+msgstr "Une collaboration de"
+
+msgid "Urban Flood Forecasting Information System"
+msgstr "Système d'information pour la prévision des crues urbaines"
+
+msgid "Programme partners"
+msgstr "Partenaires du programme"
