@@ -570,6 +570,15 @@ it with a back link home, the Agency portals menu (`#portals`) and the About she
 are listed once, in `conf/agencies.py`. Tenants never see the app: `harvest_tenants.py` drops it after
 every harvest, `access_groups.py` skips it, and `TenantAppGate` 404s its path.
 
+**Languages.** `uffis.org` and the viewer run in English, French or Spanish through Django i18n.
+`conf/apex_locale.py` picks the language on the public schema only: a `?lang=` link (stored in the
+`django_language` cookie), else the cookie, else the browser, else English. Tenants always run in
+`LANGUAGE_CODE`, since their pages are written in the agency's own language. `conf/i18n_settings.py`
+narrows `LANGUAGES` and adds the app's catalog to `LOCALE_PATHS` (Tethys apps are not in
+`INSTALLED_APPS`), and `/i18n/js/` serves the viewer's JS strings. Portal strings live in
+`conf/locale/*/LC_MESSAGES/django.po` (`django-admin makemessages -l fr -l es` from `conf/`); the
+Docker builder compiles them with the app's and fails the build on anything untranslated or fuzzy.
+
 The gate is `conf/public_gate.py`, registered through `MIDDLEWARE`. It keys on the schema rather
 than on the hostname, which is what makes it complete: `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is on, so
 the public schema also answered for the CloudFront domain and for every unrecognised Host. Removing

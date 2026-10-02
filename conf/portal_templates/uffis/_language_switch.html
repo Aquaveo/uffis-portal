@@ -1,0 +1,24 @@
+{% load i18n %}
+{% comment %}
+The apex language switch. Links rather than a form: a ?lang= link needs no CSRF token, is shareable,
+and apex_locale.ApexLocale stores it in the language cookie. Each language is named in itself.
+compact renders a one-button menu for the viewer's top bar; otherwise three inline links.
+{% endcomment %}
+{% get_current_language as current %}
+{% get_available_languages as available %}{% get_language_info_list for available as languages %}
+{% if compact %}
+<details class="apex-lang">
+  <summary class="apex-btn" aria-label="{% translate "Language" %}" title="{% translate "Language" %}">{{ current|upper }}<span class="caret" aria-hidden="true">▾</span></summary>
+  <ul class="apex-lang-menu">
+    {% for language in languages %}
+    <li><a href="?lang={{ language.code }}" lang="{{ language.code }}" hreflang="{{ language.code }}"{% if language.code == current %} aria-current="true"{% endif %}>{{ language.name_local|capfirst }}</a></li>
+    {% endfor %}
+  </ul>
+</details>
+{% else %}
+<nav class="u-lang" aria-label="{% translate "Language" %}">
+  {% for language in languages %}
+  <a href="?lang={{ language.code }}" lang="{{ language.code }}" hreflang="{{ language.code }}"{% if language.code == current %} aria-current="true"{% endif %}>{{ language.name_local|capfirst }}</a>
+  {% endfor %}
+</nav>
+{% endif %}

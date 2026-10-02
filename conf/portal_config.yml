@@ -55,6 +55,7 @@ settings:
   PUBLIC_SCHEMA_URLCONF: apex_urls
   UFFIS_OUTPUTS_BASE: https://tito.uffis.org/outputs
   MIDDLEWARE:
+    - apex_locale.ApexLocale
     - paused_tenants.PausedTenantGate
     - public_gate.PublicSchemaGate
     - public_gate.TenantAppGate
@@ -69,6 +70,7 @@ settings:
       - portal_templates
     ADDITIONAL_SETTINGS_FILES:
       - email_settings
+      - i18n_settings
     ENABLE_OPEN_PORTAL: false
     ENABLE_OPEN_SIGNUP: true
     ENABLE_RESTRICTED_APP_ACCESS: true

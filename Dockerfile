@@ -33,9 +33,19 @@ ARG WMO_PLUGINS_REF=aeff0ac15d872d161e6984dbd15eace9eb07dba5
 RUN uv pip install --no-cache \
       "tgf-wmo-plugins @ git+https://github.com/Aquaveo/tgf_wmo_plugins.git@${WMO_PLUGINS_REF}"
 
-ARG UFFIS_FORECASTS_REF=b53de947222885c0ed7e36ab1c3bb05ad4f172b3
+ARG UFFIS_FORECASTS_REF=536a611ff77cbf50398d78f4976e80b715c1195c
 RUN uv pip install --no-cache \
       "tethysapp-uffis_forecasts @ git+https://github.com/Aquaveo/tethysapp-uffis_forecasts.git@${UFFIS_FORECASTS_REF}"
+
+# Compile translations; incomplete ones fail
+RUN apt-get update && apt-get install -y --no-install-recommends gettext && rm -rf /var/lib/apt/lists/*
+COPY conf/locale /opt/portal/locale
+RUN set -e; \
+    for po in /opt/portal/locale/*/LC_MESSAGES/*.po \
+              /opt/conda/envs/tethys/lib/python3.*/site-packages/tethysapp/uffis_forecasts/locale/*/LC_MESSAGES/*.po; do \
+      msgfmt --check --statistics -o "${po%.po}.mo" "$po" 2> /tmp/msgfmt.log; cat /tmp/msgfmt.log; \
+      if grep -qE "untranslated|fuzzy" /tmp/msgfmt.log; then echo "incomplete translation: $po" >&2; exit 1; fi; \
+    done
 
 RUN chmod -R a+rX /opt/python /opt/conda \
   && chmod -R a+rwX /opt/conda/envs/tethys/lib/python3.12/site-packages/tethysapp/tethysdash
@@ -48,6 +58,7 @@ COPY --from=builder /opt/conda  /opt/conda
 COPY --chown=1000:1000 conf/portal_config.yml /config/portal_config.yml
 COPY --chmod=0755 conf/portal-config.d/ /opt/portal/portal-config.d/
 COPY --chmod=0755 conf/init.d/ /opt/portal/init.d/
-COPY conf/agencies.py conf/apex_apps.py conf/apex_urls.py conf/portal_storage.py conf/email_settings.py conf/portal_context.py conf/account_requests.py conf/access_groups.py conf/csrf_failure.py conf/public_gate.py conf/register_tenants.py conf/harvest_tenants.py conf/site_tenants.py conf/provision_tenant_store.py /opt/portal/
+COPY conf/agencies.py conf/apex_apps.py conf/apex_locale.py conf/i18n_settings.py conf/apex_urls.py conf/portal_storage.py conf/email_settings.py conf/portal_context.py conf/account_requests.py conf/access_groups.py conf/csrf_failure.py conf/public_gate.py conf/register_tenants.py conf/harvest_tenants.py conf/site_tenants.py conf/provision_tenant_store.py /opt/portal/
 COPY conf/portal_templates/ /opt/portal/portal_templates/
+COPY --from=builder /opt/portal/locale /opt/portal/locale
 COPY conf/paused_tenants.py /opt/portal/

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static tethys %}
+{% load static tethys i18n %}
 
 {% block title %}{{ block.super }}{% endblock %}
 
@@ -203,6 +203,7 @@
 <main id="content">
 <section class="u-hero" aria-labelledby="hero-title">
   <div class="u-hero-inner">
+    {% block hero_tools %}{% endblock %}
     {% block agency_identity %}
       {% if site_globals.brand_image %}
         <div class="u-agency">
@@ -215,7 +216,7 @@
           </span>
           <div>
             <p class="u-agency-name">{{ site_globals.brand_text }}</p>
-            <p class="u-agency-sub">{% block agency_tagline %}Urban Flood Forecasting Information System{% endblock %}</p>
+            <p class="u-agency-sub">{% block agency_tagline %}{% translate "Urban Flood Forecasting Information System" %}{% endblock %}</p>
           </div>
         </div>
       {% endif %}
@@ -275,9 +276,9 @@
 </section>
 
 {% block partners %}
-<aside class="u-partners" aria-label="Programme partners">
+<aside class="u-partners" aria-label="{% translate "Programme partners" %}">
   <div class="u-partners-inner">
-    <p class="u-partners-label">{% block partners_label %}A collaboration of{% endblock %}</p>
+    <p class="u-partners-label">{% block partners_label %}{% translate "A collaboration of" %}{% endblock %}</p>
     <ul class="u-partner-marks">
       {% block agency_mark %}{% endblock %}
       {% include "uffis/_partner_marks.html" %}

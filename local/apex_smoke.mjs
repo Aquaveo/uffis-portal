@@ -132,6 +132,24 @@ async function checkHome(evaluate) {
   await waitFor(evaluate, '[...document.querySelectorAll(".u-btn")].some((a) => a.textContent.trim() === "Go to UFFIS Viewer" && a.getAttribute("href") === "/viewer/") && document.getElementById("portals") && !document.getElementById("uffis-viewer")', "home page with the viewer button");
 }
 
+/**
+ * French and Spanish via ?lang=: the home page, the viewer frame and
+ * the viewer's JS text, then back to English.
+ * @param {string} devtools DevTools HTTP address
+ */
+async function checkLanguages(devtools) {
+  const home = await openPage(devtools, `${BASE}/?lang=fr`);
+  await waitFor(home.evaluate, 'document.documentElement.lang === "fr" && [...document.querySelectorAll(".u-btn")].some((a) => a.textContent.trim() === "Ouvrir le visualiseur UFFIS")', "French home page");
+  home.close();
+  const viewer = await openPage(devtools, `${BASE}/viewer/?lang=es`);
+  await waitFor(viewer.evaluate, 'document.documentElement.lang === "es" && [...document.querySelectorAll("legend")].some((l) => l.textContent === "Precipitación") && document.getElementById("about-button").textContent === "Acerca de"', "Spanish viewer frame and panel");
+  await waitFor(viewer.evaluate, '(document.querySelector("#status .card .age")?.textContent || "").startsWith("Publicado") && [...document.querySelectorAll("#regions .chip")].some((c) => c.textContent.includes("Haití"))', "Spanish text from the viewer JS");
+  viewer.close();
+  const reset = await openPage(devtools, `${BASE}/?lang=en`);
+  await waitFor(reset.evaluate, 'document.documentElement.lang === "en"', "back to English");
+  reset.close();
+}
+
 const { chrome, devtools } = await launchChrome();
 let failed = false;
 try {
@@ -146,7 +164,8 @@ try {
   await checkRegions(page.evaluate);
   const regions = await page.evaluate('[...document.querySelectorAll("#regions .chip")].map((c) => c.textContent + " " + c.className.replace("chip ", "")).join(", ")');
   page.close();
-  console.log(`apex smoke ok: home button, back link, full map, portal menu, About sheet, Esc, hash; ${regions}`);
+  await checkLanguages(devtools);
+  console.log(`apex smoke ok: home button, back link, full map, portal menu, About sheet, Esc, hash, French and Spanish; ${regions}`);
 } catch (error) {
   failed = true;
   console.error(`apex smoke failed: ${error.message}`);
