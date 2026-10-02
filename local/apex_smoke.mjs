@@ -1,5 +1,6 @@
 /**
- * Browser check of the local apex: no portal header or footer, the
+ * Browser check of the local apex: the home page button, then the
+ * viewer at /uffis_viewer/ with no portal header or footer, the
  * portal menu and About sheet, Esc and the hash, the agency line, and
  * live region freshness.
  * Needs the local stack running.
@@ -129,13 +130,24 @@ async function checkLayout(evaluate) {
  * @param {(expression: string) => Promise<any>} evaluate
  */
 async function checkRegions(evaluate) {
-  await waitFor(evaluate, 'document.querySelectorAll("#regions .chip.ok, #regions .chip.late, #regions .chip.stale").length === 5', "five live region chips");
+  await waitFor(evaluate, 'document.querySelectorAll("#regions .chip.ok, #regions .chip.late, #regions .chip.stale").length === 4', "four live region chips");
+}
+
+/**
+ * The home page keeps the portal directory and links to the viewer.
+ * @param {(expression: string) => Promise<any>} evaluate
+ */
+async function checkHome(evaluate) {
+  await waitFor(evaluate, '[...document.querySelectorAll(".u-btn")].some((a) => a.textContent.trim() === "Go to UFFIS Viewer" && a.getAttribute("href") === "/uffis_viewer/") && document.getElementById("portals") && !document.getElementById("uffis-viewer")', "home page with the viewer button");
 }
 
 const { chrome, devtools } = await launchChrome();
 let failed = false;
 try {
-  const page = await openPage(devtools, `${BASE}/#portals`);
+  const home = await openPage(devtools, `${BASE}/`);
+  await checkHome(home.evaluate);
+  home.close();
+  const page = await openPage(devtools, `${BASE}/uffis_viewer/#portals`);
   await checkMenu(page);
   await checkAbout(page);
   await checkAgencyLine(page.evaluate);
@@ -143,7 +155,7 @@ try {
   await checkRegions(page.evaluate);
   const regions = await page.evaluate('[...document.querySelectorAll("#regions .chip")].map((c) => c.textContent + " " + c.className.replace("chip ", "")).join(", ")');
   page.close();
-  console.log(`apex smoke ok: full map, portal menu, About sheet, agency line, Esc, hash; ${regions}`);
+  console.log(`apex smoke ok: home button, full map, portal menu, About sheet, agency line, Esc, hash; ${regions}`);
 } catch (error) {
   failed = true;
   console.error(`apex smoke failed: ${error.message}`);
