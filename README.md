@@ -419,7 +419,8 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: abms.localhost' http://127.0.
 
 The first is 200, the second 404. A Host missing from `ALLOWED_HOSTS` also answers a bare 404.
 `PORTAL_CONF=<path to another conf/>` runs the stack against another checkout's config, for
-comparing rendered pages before and after a change.
+comparing rendered pages before and after a change; `local/render_home.py` prints the public home
+template for such a diff.
 
 ## Day to day
 

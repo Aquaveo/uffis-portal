@@ -62,7 +62,7 @@ def harvest():
     harvester = SingletonHarvester()
     expected = expected_app_count(harvester)
     print(f"public registry: {TethysApp.objects.count()}/{expected} apps")
-    expected = tenant_app_count(expected)
+    per_tenant = tenant_app_count(expected)
 
     tenants = list(get_tenant_model().objects.exclude(schema_name="public"))
     if not tenants:
@@ -74,10 +74,10 @@ def harvest():
             harvester.harvest()
             drop_apex_apps()
             found = TethysApp.objects.count()
-            print(f"harvested {found}/{expected} apps into: {tenant.schema_name}")
-            if found < expected:
+            print(f"harvested {found}/{per_tenant} apps into: {tenant.schema_name}")
+            if found < per_tenant:
                 raise SystemExit(
-                    f"FATAL: {tenant.schema_name} registry has {found} apps, expected {expected}"
+                    f"FATAL: {tenant.schema_name} registry has {found} apps, expected {per_tenant}"
                 )
 
 

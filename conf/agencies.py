@@ -6,8 +6,7 @@ nor its seal. Adding or removing a tenant means editing this list.
 """
 
 from django.db import connection
-
-PUBLIC_SCHEMA = "public"
+from public_gate import PUBLIC_SCHEMA
 
 # Ordered by country name
 AGENCIES = [

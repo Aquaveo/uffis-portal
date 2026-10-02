@@ -158,7 +158,7 @@ and is also handed to the app as JSON, so the viewer can name the selected count
       <li>
         <a class="apex-agency" href="https://{{ agency.host }}">
           <span class="apex-seal">
-            {% if agency.seal %}<img src="{% static agency.seal %}" alt="" width="48" height="48">{% else %}<span class="apex-seal-word">{{ agency.short }}</span>{% endif %}
+            {% if agency.seal %}<img src="{% static agency.seal %}" alt="" width="48" height="48" loading="lazy" decoding="async">{% else %}<span class="apex-seal-word">{{ agency.short }}</span>{% endif %}
           </span>
           <span class="apex-agency-text">
             <span class="apex-place">{{ agency.place }}</span>

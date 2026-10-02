@@ -34,7 +34,6 @@ def seed():
     print(f"domain {DOMAIN}: {'created' if created else 'exists'}")
 
 
-
 def pin_home_template():
     """Give the tenant its agency home, as an operator does in production admin."""
     with schema_context(SCHEMA):
