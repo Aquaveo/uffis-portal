@@ -59,6 +59,7 @@ settings:
     - public_gate.TenantAppGate
   CONTEXT_PROCESSORS:
     - portal_context.tenant_language
+    - agencies.public_agencies
   CHANNEL_LAYERS:
     default:
       BACKEND: channels.layers.InMemoryChannelLayer

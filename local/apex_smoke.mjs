@@ -1,6 +1,7 @@
 /**
  * Browser check of the local apex: no portal header or footer, the
- * About panel deep link, Esc and the hash, and live region freshness.
+ * portal menu and About sheet, Esc and the hash, the agency line, and
+ * live region freshness.
  * Needs the local stack running.
  * Run: CHROME=chromium node local/apex_smoke.mjs [base URL]
  */
@@ -79,16 +80,37 @@ async function pressEscape(send) {
 }
 
 /**
- * Check the panel deep link, Esc and hash clearing.
+ * Check the portal menu deep link, Esc and hash clearing.
  * @param {{evaluate: Function, send: Function}} page
  */
-async function checkPanel({ evaluate, send }) {
-  await waitFor(evaluate, 'document.getElementById("about").open', "panel open from #portals");
-  await waitFor(evaluate, '(() => { const r = document.getElementById("portals").getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight; })()', "agency directory in view");
-  const links = await evaluate('[...document.querySelectorAll("#about a.u-portal")].map((a) => a.host).join(",")');
+async function checkMenu({ evaluate, send }) {
+  await waitFor(evaluate, '!document.getElementById("portals-menu").hidden', "portal menu open from #portals");
+  const links = await evaluate('[...document.querySelectorAll("#portals-menu a.apex-agency")].map((a) => a.host).join(",")');
   if (links.split(",").length !== 5) throw new Error(`agency links: ${links}`);
   await pressEscape(send);
-  await waitFor(evaluate, '!document.getElementById("about").open && location.hash === ""', "Esc closes and clears the hash");
+  await waitFor(evaluate, 'document.getElementById("portals-menu").hidden && location.hash === "" && document.activeElement.id === "portals-button"', "Esc closes the menu, clears the hash, refocuses");
+}
+
+/**
+ * Check the About sheet opens beside the map and closes on Esc.
+ * @param {{evaluate: Function, send: Function}} page
+ */
+async function checkAbout({ evaluate, send }) {
+  await evaluate('document.getElementById("about-button").click()');
+  await waitFor(evaluate, 'document.getElementById("about").open && location.hash === "#about" && document.activeElement.id === "about-title"', "About sheet open with focus");
+  const marks = await evaluate('(() => { const r = document.getElementById("about").getBoundingClientRect(); return [...document.querySelectorAll("#about .apex-partners img")].filter((i) => i.getBoundingClientRect().right <= r.right + 1).length; })()');
+  if (marks !== 5) throw new Error(`partner marks inside the sheet: ${marks}`);
+  await pressEscape(send);
+  await waitFor(evaluate, '!document.getElementById("about").open && location.hash === ""', "Esc closes the About sheet");
+}
+
+/**
+ * Check the panel names the selected country's agency.
+ * @param {(expression: string) => Promise<any>} evaluate
+ */
+async function checkAgencyLine(evaluate) {
+  const line = await waitFor(evaluate, 'document.getElementById("agency").textContent', "agency line");
+  if (!line.includes("INSIVUMEH")) throw new Error(`agency line: ${line}`);
 }
 
 /**
@@ -114,12 +136,14 @@ const { chrome, devtools } = await launchChrome();
 let failed = false;
 try {
   const page = await openPage(devtools, `${BASE}/#portals`);
-  await checkPanel(page);
+  await checkMenu(page);
+  await checkAbout(page);
+  await checkAgencyLine(page.evaluate);
   await checkLayout(page.evaluate);
   await checkRegions(page.evaluate);
   const regions = await page.evaluate('[...document.querySelectorAll("#regions .chip")].map((c) => c.textContent + " " + c.className.replace("chip ", "")).join(", ")');
   page.close();
-  console.log(`apex smoke ok: full map, panel, directory, Esc, hash; ${regions}`);
+  console.log(`apex smoke ok: full map, portal menu, About sheet, agency line, Esc, hash; ${regions}`);
 } catch (error) {
   failed = true;
   console.error(`apex smoke failed: ${error.message}`);

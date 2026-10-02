@@ -22,6 +22,7 @@ conf/init.d/                      provisioning hooks, run by the base provision.
 conf/register_tenants.py          creates the public tenant and its domain rows
 conf/apex_urls.py                 public schema URLconf: the UFFIS Forecasts app at /, then the portal
 conf/apex_apps.py                 apps that serve the apex only, kept out of every tenant
+conf/agencies.py                  the participating agencies, read by the apex templates
 local/                            local stack: portal image, Postgres and one tenant, for testing
 conf/portal_storage.py            S3 static storage backend
 tofu/uffis.tfvars.example         infrastructure inputs, tokenized; the real file is gitignored
@@ -584,9 +585,11 @@ patterns; tenants keep `tethys_portal.urls`. The app reads TITO's outputs from
 request and keeps answering the health check when TITO is down. Without the app installed,
 `apex_urls` is just the portal and `/` falls back to the landing page below.
 
-The app's page extends `conf/portal_templates/uffis/apex.html`, which renders the whole landing page
-inside the About UFFIS panel. `#about` and `#portals` open it, so old links to the directory still
-land on it, and with JavaScript off the panel is shown in place.
+The app's page extends `conf/portal_templates/uffis/apex.html`, which drops the portal header and
+footer and frames the map with an Agency portals menu and a short About sheet. `#portals` opens the
+menu, so old links to the directory still land on it, and `#about` opens the sheet. With JavaScript
+off both are shown in place. The agencies are listed once, in `conf/agencies.py`: the public home
+directory, the menu and the viewer's "Warnings for <country>" line all read it.
 
 The app stays out of the tenants. `harvest_tenants.py` drops it from each tenant registry after every
 harvest, `access_groups.py` grants no access to it, and `TenantAppGate` in `public_gate.py` 404s its
@@ -607,9 +610,9 @@ tenant extends. Its job is to send a visitor to the right agency, so it carries 
 participating services and the hero's one button is an anchor to that directory rather than a
 login. Every other control a portal would offer is absent, because all of them would 404 here.
 
-That directory is written out in the template rather than read from the tenant table, because the
-table does not hold an agency's own name in its own language or its seal. Adding or removing a
-tenant means editing that list. A service with no seal gets its initials as a wordmark, the same
+That directory comes from `conf/agencies.py` rather than the tenant table, because the table does
+not hold an agency's own name in its own language or its seal. Adding or removing a tenant means
+editing that list. A service with no seal gets its initials as a wordmark, the same
 substitution its own page makes.
 
 `site_tenants.py` pins the public schema's Home Page Template on every provision. That one is

@@ -6,9 +6,8 @@ The apex. Every account, app and admin path 404s on the public schema, so this p
 controls of its own. Its job is to send a visitor to the right agency, which is what the directory
 below does, and the hero's one button is an anchor to it rather than a login.
 
-The directory is written out here rather than read from the tenant table. Adding or removing a
-tenant means editing this list. Each entry carries the agency's own name in the agency's own
-language, which the tenant table does not hold.
+The directory comes from conf/agencies.py, the one list the apex also reads. Each entry carries
+the agency's own name in the agency's own language, which the tenant table does not hold.
 {% endcomment %}
 
 {% block hero_title %}Flood forecasting support for warning services{% endblock %}
@@ -29,66 +28,26 @@ language, which the tenant table does not hold.
     <p class="u-portals-lede">Each service runs its own portal. Accounts are held there, and are arranged by the service itself.</p>
 
     <ul class="u-portal-grid">
+      {% for agency in agencies %}
       <li>
-        <a class="u-portal" href="https://abms.uffis.org">
+        <a class="u-portal" href="https://{{ agency.host }}">
+          {% if agency.seal %}
           <span class="u-portal-mark">
-            <img src="{% static 'tenants/abms/abms_logo.png' %}" alt="" loading="lazy">
+            <img src="{% static agency.seal %}" alt="" loading="lazy">
           </span>
+          {% else %}
+          {% comment %} No seal exists for this service, so the mark slot is set as a wordmark, the
+          same substitution the agency's own page makes. {% endcomment %}
+          <span class="u-portal-mark"><span class="u-portal-wordmark">{{ agency.short }}</span></span>
+          {% endif %}
           <span class="u-portal-text">
-            <span class="u-portal-place">Antigua and Barbuda</span>
-            <span class="u-portal-agency">Antigua and Barbuda Meteorological Services</span>
+            <span class="u-portal-place">{{ agency.place }}</span>
+            <span class="u-portal-agency">{{ agency.name }}</span>
           </span>
-          <span class="u-portal-host">abms.uffis.org</span>
+          <span class="u-portal-host">{{ agency.host }}</span>
         </a>
       </li>
-      <li>
-        <a class="u-portal" href="https://bms.uffis.org">
-          <span class="u-portal-mark">
-            <img src="{% static 'tenants/bms/bms_logo.png' %}" alt="" loading="lazy">
-          </span>
-          <span class="u-portal-text">
-            <span class="u-portal-place">Barbados</span>
-            <span class="u-portal-agency">Barbados Meteorological Services</span>
-          </span>
-          <span class="u-portal-host">bms.uffis.org</span>
-        </a>
-      </li>
-      <li>
-        <a class="u-portal" href="https://anacm.uffis.org">
-          <span class="u-portal-mark">
-            <img src="{% static 'tenants/anacm/anacm_logo.png' %}" alt="" loading="lazy">
-          </span>
-          <span class="u-portal-text">
-            <span class="u-portal-place">Comoros</span>
-            <span class="u-portal-agency">Agence Nationale de l'Aviation Civile et de la Météorologie</span>
-          </span>
-          <span class="u-portal-host">anacm.uffis.org</span>
-        </a>
-      </li>
-      <li>
-        <a class="u-portal" href="https://insivumeh.uffis.org">
-          <span class="u-portal-mark">
-            <img src="{% static 'tenants/insivumeh/insivumeh_seal.png' %}" alt="" loading="lazy">
-          </span>
-          <span class="u-portal-text">
-            <span class="u-portal-place">Guatemala</span>
-            <span class="u-portal-agency">Instituto Nacional de Sismología, Vulcanología, Meteorología e Hidrología</span>
-          </span>
-          <span class="u-portal-host">insivumeh.uffis.org</span>
-        </a>
-      </li>
-      <li>
-        {% comment %} No seal exists for this service, so the mark slot is set as a wordmark, the
-        same substitution the agency's own page makes. {% endcomment %}
-        <a class="u-portal" href="https://uhm.uffis.org">
-          <span class="u-portal-mark"><span class="u-portal-wordmark">UHM</span></span>
-          <span class="u-portal-text">
-            <span class="u-portal-place">Haiti</span>
-            <span class="u-portal-agency">Unité Hydrométéorologique d'Haïti</span>
-          </span>
-          <span class="u-portal-host">uhm.uffis.org</span>
-        </a>
-      </li>
+      {% endfor %}
     </ul>
   </div>
 </section>
