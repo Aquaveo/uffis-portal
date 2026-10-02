@@ -11,7 +11,7 @@ catalog by path because Tethys apps are not in INSTALLED_APPS, so Django never l
 from importlib.util import find_spec
 from pathlib import Path
 
-__all__ = ["LANGUAGE_CODE", "LANGUAGES", "LOCALE_PATHS"]
+__all__ = ["LANGUAGES", "LANGUAGE_CODE", "LOCALE_PATHS"]
 
 LANGUAGE_CODE = "en"
 
