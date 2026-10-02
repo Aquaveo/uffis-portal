@@ -397,30 +397,13 @@ tolerating 404 at the load balancer would make a misconfigured portal look healt
 
 ## Run locally
 
-The local stack runs the portal image with Postgres 17 and one tenant, ABMS at `abms.localhost`.
-`conf/` and the app repository are mounted, so template, config and viewer edits show on reload.
-Clone `tethysapp-uffis_forecasts` next to this repository, or set `UFFIS_FORECASTS_SRC`.
-
 ```bash
 docker compose -f local/compose.yml up --build -d
 ```
 
-Then open `http://localhost:8000/` for the apex and `http://abms.localhost:8000/` for the tenant.
-Logos come from `branding/`, mounted into the static folder. `DEBUG` is on, so runserver serves
-static files and reloads code. Check the panel and live cards with
-`CHROME=chromium node local/apex_smoke.mjs`.
-
-Host checks without a browser:
-
-```bash
-curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: uffis.org' http://127.0.0.1:8000/
-curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: abms.localhost' http://127.0.0.1:8000/apps/uffis-forecasts/
-```
-
-The first is 200, the second 404. A Host missing from `ALLOWED_HOSTS` also answers a bare 404.
-`PORTAL_CONF=<path to another conf/>` runs the stack against another checkout's config, for
-comparing rendered pages before and after a change; `local/render_home.py` prints the public home
-template for such a diff.
+Portal image, Postgres and one tenant: the apex at `http://localhost:8000/`, ABMS at `http://abms.localhost:8000/`.
+Clone `tethysapp-uffis_forecasts` next to this repository (or set `UFFIS_FORECASTS_SRC`); `conf/` and the app are mounted, so edits show on reload.
+Browser check: `CHROME=chromium node local/apex_smoke.mjs`.
 
 ## Day to day
 
@@ -579,22 +562,12 @@ tenant because groups live in the tenant schema.
 `uffis.org` is the public schema and serves the forecast viewer only. Accounts, apps, the user area
 and the admin all answer 404 there, so nobody can sign up on it and there is nothing to sign in to.
 
-`/` is the UFFIS Forecasts app (`Aquaveo/tethysapp-uffis_forecasts`). `PUBLIC_SCHEMA_URLCONF` points
-the public schema at `conf/apex_urls.py`, which mounts the app at the root ahead of the portal's own
-patterns; tenants keep `tethys_portal.urls`. The app reads TITO's outputs from
-`https://tito.uffis.org/outputs` (`UFFIS_OUTPUTS_BASE`) in the browser, so `/` makes no outbound
-request and keeps answering the health check when TITO is down. Without the app installed,
-`apex_urls` is just the portal and `/` falls back to the landing page below.
-
-The app's page extends `conf/portal_templates/uffis/apex.html`, which drops the portal header and
-footer and frames the map with an Agency portals menu and a short About sheet. `#portals` opens the
-menu, so old links to the directory still land on it, and `#about` opens the sheet. With JavaScript
-off both are shown in place. The agencies are listed once, in `conf/agencies.py`: the public home
-directory, the menu and the viewer's "Warnings for <country>" line all read it.
-
-The app stays out of the tenants. `harvest_tenants.py` drops it from each tenant registry after every
-harvest, `access_groups.py` grants no access to it, and `TenantAppGate` in `public_gate.py` 404s its
-path on every tenant, because the URLconf is shared and the route would otherwise answer there.
+`/` is the UFFIS Forecasts app (`Aquaveo/tethysapp-uffis_forecasts`), mounted by `conf/apex_urls.py`
+through `PUBLIC_SCHEMA_URLCONF`; tenants keep `tethys_portal.urls`. The map reads TITO's outputs in the
+browser, so `/` answers the health check even when TITO is down. `uffis/apex.html` frames it with the
+Agency portals menu (`#portals`) and the About sheet (`#about`); agencies are listed once, in
+`conf/agencies.py`. Tenants never see the app: `harvest_tenants.py` drops it after every harvest,
+`access_groups.py` skips it, and `TenantAppGate` 404s its path.
 
 The gate is `conf/public_gate.py`, registered through `MIDDLEWARE`. It keys on the schema rather
 than on the hostname, which is what makes it complete: `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is on, so
