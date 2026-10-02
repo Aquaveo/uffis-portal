@@ -33,6 +33,10 @@ ARG WMO_PLUGINS_REF=aeff0ac15d872d161e6984dbd15eace9eb07dba5
 RUN uv pip install --no-cache \
       "tgf-wmo-plugins @ git+https://github.com/Aquaveo/tgf_wmo_plugins.git@${WMO_PLUGINS_REF}"
 
+ARG UFFIS_FORECASTS_REF=85ff7d8f067d196a3ef6a36f3fae9ef20fd5ca7a
+RUN uv pip install --no-cache \
+      "tethysapp-uffis_forecasts @ git+https://github.com/Aquaveo/tethysapp-uffis_forecasts.git@${UFFIS_FORECASTS_REF}"
+
 RUN chmod -R a+rX /opt/python /opt/conda \
   && chmod -R a+rwX /opt/conda/envs/tethys/lib/python3.12/site-packages/tethysapp/tethysdash
 
