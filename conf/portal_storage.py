@@ -13,6 +13,9 @@ from storages.backends.s3 import S3Storage
 
 PUBLIC_MEDIA_PREFIX = "portal_public"
 
+# Unhashed static names need short caching
+STATIC_CACHE_CONTROL = "public, max-age=300"
+
 
 def tenant_prefix():
     """Return the media prefix for the schema this connection is bound to.
@@ -33,7 +36,19 @@ def tenant_prefix():
 
 
 class PortalStaticS3Storage(S3Storage):
-    """Shared static assets, with leading slashes stripped so keys resolve under the location."""
+    """Shared static assets, with leading slashes stripped so keys resolve under the location.
+
+    Static keys are not content hashed, so a deploy changes a file in place. With no Cache-Control,
+    CloudFront's CachingOptimized policy keeps an object for a day, and it caches each encoding
+    separately: after one deploy browsers got the old brotli main.js beside the new page and the
+    viewer crashed while plain requests looked fine. Five minutes bounds how stale a deploy can be.
+    """
+
+    def get_object_parameters(self, name):
+        """Add the static Cache-Control to every uploaded object unless one is configured."""
+        params = super().get_object_parameters(name)
+        params.setdefault("CacheControl", STATIC_CACHE_CONTROL)
+        return params
 
     def url(self, name, *args, **kwargs):
         if isinstance(name, str):
