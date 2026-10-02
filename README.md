@@ -20,6 +20,10 @@ conf/portal_config.yml            declarative portal settings, including TENANTS
 conf/portal-config.d/             config hooks, run by the base portal-config.sh at container start
 conf/init.d/                      provisioning hooks, run by the base provision.sh once per release
 conf/register_tenants.py          creates the public tenant and its domain rows
+conf/apex_urls.py                 public schema URLconf: the UFFIS Forecasts app at /, then the portal
+conf/apex_apps.py                 apps that serve the apex only, kept out of every tenant
+conf/agencies.py                  the participating agencies, read by the apex templates
+local/                            local stack: portal image, Postgres and one tenant, for testing
 conf/portal_storage.py            S3 static storage backend
 tofu/uffis.tfvars.example         infrastructure inputs, tokenized; the real file is gitignored
 tofu/backend.hcl.example          tofu state location, tokenized
@@ -391,6 +395,16 @@ the public portal rather than 404ing. A **400 or 404 anywhere here means somethi
 is the point: under tenancy `TenantMainMiddleware` turns a DisallowedHost into a 404 as well, so
 tolerating 404 at the load balancer would make a misconfigured portal look healthy.
 
+## Run locally
+
+```bash
+docker compose -f local/compose.yml up --build -d
+```
+
+Portal image, Postgres and one tenant: the apex at `http://localhost:8000/`, ABMS at `http://abms.localhost:8000/`.
+Clone `tethysapp-uffis_forecasts` next to this repository (or set `UFFIS_FORECASTS_SRC`); `conf/` and the app are mounted, so edits show on reload.
+Browser check: `CHROME=chromium node local/apex_smoke.mjs`.
+
 ## Day to day
 
 New image: push to `main`, then bump `image_uri` in `tofu/uffis.tfvars` and run the tofu deploy
@@ -545,8 +559,15 @@ tenant because groups live in the tenant schema.
 
 ## The apex
 
-`uffis.org` is the public schema and serves a landing page only. Accounts, apps, the user area and
-the admin all answer 404 there, so nobody can sign up on it and there is nothing to sign in to.
+`uffis.org` is the public schema and serves the forecast viewer only. Accounts, apps, the user area
+and the admin all answer 404 there, so nobody can sign up on it and there is nothing to sign in to.
+
+`/` is the UFFIS Forecasts app (`Aquaveo/tethysapp-uffis_forecasts`), mounted by `conf/apex_urls.py`
+through `PUBLIC_SCHEMA_URLCONF`; tenants keep `tethys_portal.urls`. The map reads TITO's outputs in the
+browser, so `/` answers the health check even when TITO is down. `uffis/apex.html` frames it with the
+Agency portals menu (`#portals`) and the About sheet (`#about`); agencies are listed once, in
+`conf/agencies.py`. Tenants never see the app: `harvest_tenants.py` drops it after every harvest,
+`access_groups.py` skips it, and `TenantAppGate` 404s its path.
 
 The gate is `conf/public_gate.py`, registered through `MIDDLEWARE`. It keys on the schema rather
 than on the hostname, which is what makes it complete: `SHOW_PUBLIC_IF_NO_TENANT_FOUND` is on, so
@@ -563,9 +584,9 @@ tenant extends. Its job is to send a visitor to the right agency, so it carries 
 participating services and the hero's one button is an anchor to that directory rather than a
 login. Every other control a portal would offer is absent, because all of them would 404 here.
 
-That directory is written out in the template rather than read from the tenant table, because the
-table does not hold an agency's own name in its own language or its seal. Adding or removing a
-tenant means editing that list. A service with no seal gets its initials as a wordmark, the same
+That directory comes from `conf/agencies.py` rather than the tenant table, because the table does
+not hold an agency's own name in its own language or its seal. Adding or removing a tenant means
+editing that list. A service with no seal gets its initials as a wordmark, the same
 substitution its own page makes.
 
 `site_tenants.py` pins the public schema's Home Page Template on every provision. That one is

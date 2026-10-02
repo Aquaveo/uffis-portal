@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+The apex page. An app fills the viewer block and the page head through viewer_assets. The portal
+owns the frame around it: the agency portal menu in the top bar, and a short About sheet written for
+a panel rather than the landing page squeezed into one. The agency list comes from conf/agencies.py
+and is also handed to the app as JSON, so the viewer can name the selected country's agency.
+{% endcomment %}
+
+{% block htmltag %}<html lang="en" class="h-100">{% endblock %}
+
+{% block title %}UFFIS Forecasts{% endblock %}
+
+{% block meta %}
+  {{ block.super }}
+  <meta name="description" content="Hourly flash flood and impact based forecasts from UFFIS, with links to each agency portal.">
+  <link rel="canonical" href="https://uffis.org/">
+{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+  {% include "uffis/_palette.html" %}
+  {% block viewer_assets %}{% endblock %}
+  <style id="uffis-apex">
+    html, body { height: 100%; overflow: hidden; }
+
+    .apex-bar {
+      position: fixed; top: 12px; left: 50%; z-index: 1000; transform: translateX(-50%);
+      display: flex; align-items: center; gap: .35rem;
+      padding: .3rem .35rem .3rem 1rem; border-radius: 999px;
+      background: var(--brand); color: var(--on-brand);
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .2);
+    }
+    .apex-name { margin-right: .5rem; font-weight: 700; letter-spacing: .02em; color: inherit; text-decoration: none; border-radius: 4px; }
+    .apex-name:hover { text-decoration: underline; }
+    .apex-name:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .apex-btn {
+      min-height: 2.25rem; padding: .35rem .85rem; border: 0; border-radius: 999px;
+      background: transparent; color: var(--on-brand); font: inherit; font-size: .9rem; font-weight: 600;
+      cursor: pointer;
+    }
+    .apex-btn:hover, .apex-btn[aria-expanded="true"] { background: color-mix(in oklch, var(--on-brand) 16%, transparent); }
+    .apex-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .apex-short { display: none; }
+    .apex-btn .caret { display: inline-block; margin-left: .3rem; transition: transform .2s var(--ease); }
+    .apex-btn[aria-expanded="true"] .caret { transform: rotate(180deg); }
+
+    .apex-menu {
+      position: absolute; top: calc(100% + .5rem); left: 50%; transform: translateX(-50%);
+      width: min(30rem, calc(100vw - 1.5rem));
+      padding: .4rem; border-radius: 14px;
+      background: var(--surface); color: var(--ink);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, .22);
+    }
+    .apex-menu-head { margin: .55rem .75rem .35rem; color: var(--muted); font-size: .8rem; }
+    .apex-menu ul { margin: 0; padding: 0; list-style: none; }
+    .apex-agency {
+      display: grid; grid-template-columns: 3rem 1fr; align-items: center; gap: .9rem;
+      padding: .65rem .75rem; border-radius: 10px;
+      color: inherit; text-decoration: none;
+    }
+    .apex-agency:hover { background: var(--brand-wash); color: inherit; }
+    .apex-agency:focus-visible { outline: 3px solid var(--brand); outline-offset: -3px; }
+    .apex-seal { display: grid; place-items: center; width: 3rem; height: 3rem; }
+    .apex-seal img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .apex-seal-word { color: var(--brand); font-weight: 800; font-size: .95rem; letter-spacing: .02em; }
+    .apex-agency-text { display: grid; min-width: 0; }
+    .apex-place { font-weight: 700; }
+    .apex-agency-name { color: var(--muted); font-size: .82rem; line-height: 1.35; text-wrap: pretty; }
+    .apex-host { margin-top: .15rem; color: var(--brand); font-size: .82rem; font-weight: 650; }
+
+    .apex-about {
+      position: fixed; inset: 0 auto 0 0; z-index: 1100;
+      width: min(26rem, 100vw); height: 100dvh; max-height: 100dvh; max-width: 100vw;
+      margin: 0; padding: 0; border: 0; overflow-y: auto;
+      background: var(--surface); color: var(--ink);
+      box-shadow: 8px 0 32px rgba(0, 0, 0, .22);
+    }
+    .apex-about-inner { padding: 1.25rem 1.5rem 2rem; }
+    .apex-about-head { display: flex; align-items: center; gap: .75rem; }
+    .apex-about-head img { width: 2.5rem; height: 2.5rem; object-fit: contain; }
+    .apex-about-head h2 { flex: 1; margin: 0; font-size: 1.35rem; font-weight: 700; letter-spacing: -.01em; }
+    .apex-about-head h2:focus { outline: none; }
+    .apex-close {
+      min-height: 2.75rem; padding: .4rem .9rem; border: 1px solid var(--line); border-radius: 8px;
+      background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .apex-close:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+    .apex-lede { margin: 1.25rem 0 0; font-size: 1.05rem; line-height: 1.6; text-wrap: pretty; }
+
+    .apex-steps { margin: 1.75rem 0 0; padding: 0; list-style: none; counter-reset: step; }
+    .apex-steps li { position: relative; padding: 0 0 1.1rem 2.5rem; counter-increment: step; }
+    .apex-steps li::before {
+      content: counter(step); position: absolute; left: 0; top: .05rem;
+      display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%;
+      background: var(--brand); color: var(--on-brand); font-size: .8rem; font-weight: 700;
+    }
+    .apex-steps li:not(:last-child)::after {
+      content: ""; position: absolute; left: .78rem; top: 1.85rem; bottom: .2rem;
+      width: 2px; background: var(--line);
+    }
+    .apex-steps strong { display: block; margin-bottom: .15rem; }
+    .apex-steps p { margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.55; }
+
+    .apex-cta {
+      display: inline-flex; align-items: center; min-height: 2.75rem; margin-top: .5rem;
+      padding: .55rem 1.1rem; border-radius: 8px;
+      background: var(--brand); color: var(--on-brand); font-weight: 650; text-decoration: none;
+    }
+    .apex-cta:hover { background: var(--brand-deep); color: var(--on-brand); }
+    .apex-cta:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    .apex-partners { margin-top: 2.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+    .apex-partners h3 { margin: 0 0 1rem; color: var(--muted); font-size: .85rem; font-weight: 600; }
+    /* Logo wall: wide marks left */
+    .apex-partners ul {
+      display: grid; grid-template-columns: 5fr 3fr; gap: 1px;
+      margin: 0; padding: 0; list-style: none;
+      background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    }
+    .apex-partners li { display: flex; min-width: 0; background: var(--surface); }
+    .apex-partners .u-span { grid-column: 1 / -1; }
+    .apex-partners a {
+      display: flex; flex: 1; align-items: center; justify-content: center;
+      min-height: 4.75rem; padding: .6rem .7rem;
+    }
+    .apex-partners a:focus-visible { outline: 3px solid var(--brand); outline-offset: -3px; border-radius: 4px; }
+    .apex-partners img {
+      display: block; width: auto; max-width: 100%; height: 2.4rem; object-fit: contain;
+      opacity: .88; transition: opacity .2s ease-out;
+    }
+    .apex-partners a:hover img, .apex-partners a:focus-visible img { opacity: 1; }
+    .apex-partners .u-mark-compact { height: 2.1rem; }
+    .apex-partners .u-mark-wide { height: 3rem; }
+
+    @media (max-width: 640px) {
+      .apex-bar { left: 56px; transform: none; padding-left: .8rem; }
+      .apex-name, .apex-long { display: none; }
+      .apex-short { display: inline; }
+      .apex-btn { padding: .35rem .65rem; font-size: .8rem; }
+      .apex-menu { position: fixed; top: 4rem; left: .75rem; right: .75rem; width: auto; transform: none; }
+    }
+    @media (pointer: coarse) {
+      .apex-btn { min-height: 44px; }
+      .apex-bar { top: 10px; }
+    }
+    @media (pointer: coarse) and (max-width: 640px) { .apex-bar { left: 68px; } }
+    @media (prefers-reduced-motion: reduce) { .apex-btn .caret, .apex-partners img { transition: none; } }
+  </style>
+  <noscript><style>
+    .apex-menu[hidden] { display: block; }
+    .apex-about:not([open]) { display: block; }
+    .apex-close, .apex-btn { display: none; }
+  </style></noscript>
+{% endblock %}
+
+{% block header %}{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block content %}
+<nav class="apex-bar" aria-label="UFFIS">
+  <a class="apex-name" href="/">UFFIS</a>
+  <button id="about-button" class="apex-btn" type="button" aria-controls="about" aria-expanded="false">About</button>
+  <button id="portals-button" class="apex-btn" type="button" aria-controls="portals-menu" aria-expanded="false"><span class="apex-long">Agency p</span><span class="apex-short">P</span>ortals<span class="caret" aria-hidden="true">▾</span></button>
+  <div id="portals-menu" class="apex-menu" hidden>
+    <p class="apex-menu-head">Each service runs its own portal. Accounts are held there.</p>
+    <ul>
+      {% for agency in agencies %}
+      <li>
+        <a class="apex-agency" href="https://{{ agency.host }}">
+          <span class="apex-seal">
+            {% if agency.seal %}<img src="{% static agency.seal %}" alt="" width="48" height="48" loading="lazy" decoding="async">{% else %}<span class="apex-seal-word">{{ agency.short }}</span>{% endif %}
+          </span>
+          <span class="apex-agency-text">
+            <span class="apex-place">{{ agency.place }}</span>
+            <span class="apex-agency-name">{{ agency.name }}</span>
+            <span class="apex-host">{{ agency.host }}</span>
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</nav>
+
+{% block viewer %}{% endblock %}
+
+<dialog id="about" class="apex-about" aria-labelledby="about-title">
+  <div class="apex-about-inner">
+    <header class="apex-about-head">
+      {% if site_globals.brand_image %}<img src="{% if 'http' in site_globals.brand_image %}{{ site_globals.brand_image }}{% else %}{% static site_globals.brand_image %}{% endif %}" alt="" loading="lazy" decoding="async">{% endif %}
+      <h2 id="about-title" tabindex="-1">About UFFIS</h2>
+      <button id="about-close" class="apex-close" type="button">Close</button>
+    </header>
+
+    <p class="apex-lede">The Urban Flood Forecasting Information System runs flash flood forecasts every hour for five national meteorological and hydrological services, and gives each service its own portal.</p>
+
+    <ol class="apex-steps">
+      <li>
+        <strong>Every hour</strong>
+        <p>EF5 routes satellite rainfall, a nowcast and an ensemble forecast through each country's catchments.</p>
+      </li>
+      <li>
+        <strong>Forecasts and impact</strong>
+        <p>Streamflow, soil saturation, flood probability and impact on buildings, roads and people are published openly. This map reads them directly.</p>
+      </li>
+      <li>
+        <strong>A portal for each service</strong>
+        <p>Each service briefs and warns from its own portal, with its own accounts and data.</p>
+      </li>
+    </ol>
+
+    <a class="apex-cta" href="#portals">Find your agency portal</a>
+
+    <section class="apex-partners" aria-labelledby="partners-title">
+      <h3 id="partners-title">A collaboration of</h3>
+      <ul>
+        {% include "uffis/_partner_marks.html" %}
+      </ul>
+    </section>
+  </div>
+</dialog>
+
+{{ agencies|json_script:"uffis-agencies" }}
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script type="module">
+    const about = document.getElementById("about");
+    const aboutButton = document.getElementById("about-button");
+    const menu = document.getElementById("portals-menu");
+    const portalsButton = document.getElementById("portals-button");
+
+    /**
+     * Show a hash in the URL without a history entry.
+     * @param {string} hash "#about", "#portals" or ""
+     */
+    function setHash(hash) {
+      history.replaceState(null, "", hash || location.pathname + location.search);
+    }
+
+    /**
+     * Open the portal menu.
+     */
+    function openMenu() {
+      closeAbout(false);
+      menu.hidden = false;
+      portalsButton.setAttribute("aria-expanded", "true");
+      setHash("#portals");
+    }
+
+    /**
+     * Close the portal menu.
+     * @param {boolean} refocus return focus to its button
+     */
+    function closeMenu(refocus) {
+      if (menu.hidden) return;
+      menu.hidden = true;
+      portalsButton.setAttribute("aria-expanded", "false");
+      if (location.hash === "#portals") setHash("");
+      if (refocus) portalsButton.focus();
+    }
+
+    /**
+     * Open the About sheet beside the map and move focus to it.
+     */
+    function openAbout() {
+      closeMenu(false);
+      if (!about.open) about.show();
+      aboutButton.setAttribute("aria-expanded", "true");
+      setHash("#about");
+      document.getElementById("about-title").focus();
+    }
+
+    /**
+     * Close the About sheet.
+     * @param {boolean} refocus return focus to its button
+     */
+    function closeAbout(refocus) {
+      if (!about.open) return;
+      about.close();
+      aboutButton.setAttribute("aria-expanded", "false");
+      if (location.hash === "#about") setHash("");
+      if (refocus) aboutButton.focus();
+    }
+
+    /**
+     * Open what the URL hash names; other hashes are ignored.
+     */
+    function followHash() {
+      if (location.hash === "#portals") openMenu();
+      else if (location.hash === "#about") openAbout();
+    }
+
+    /**
+     * Route clicks: panel links, the bar buttons, and clicks outside
+     * the open menu.
+     * @param {MouseEvent} event
+     */
+    function onClick(event) {
+      const link = event.target.closest('a[href="#portals"], a[href="#about"]');
+      if (link) {
+        event.preventDefault();
+        if (link.getAttribute("href") === "#portals") openMenu();
+        else openAbout();
+        return;
+      }
+      if (event.target.closest("#portals-button")) {
+        if (menu.hidden) openMenu();
+        else closeMenu(false);
+        return;
+      }
+      if (event.target.closest("#about-button")) {
+        if (about.open) closeAbout(false);
+        else openAbout();
+        return;
+      }
+      if (!menu.hidden && !menu.contains(event.target)) closeMenu(false);
+    }
+
+    /**
+     * Esc closes the menu first, then the About sheet.
+     * @param {KeyboardEvent} event
+     */
+    function onKey(event) {
+      if (event.key !== "Escape") return;
+      if (!menu.hidden) closeMenu(true);
+      else if (about.open) closeAbout(true);
+    }
+
+    document.addEventListener("click", onClick);
+    document.addEventListener("keydown", onKey);
+    document.getElementById("about-close").addEventListener("click", () => closeAbout(true));
+    window.addEventListener("hashchange", followHash);
+    followHash();
+  </script>
+{% endblock %}

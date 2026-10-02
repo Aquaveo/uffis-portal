@@ -6,7 +6,7 @@ Groups live in the tenant schema, so the group has to exist once per tenant, and
 later needs one too.
 
 Running this on every provision keeps that true without anyone remembering. It is additive: the
-permission is granted for every app currently installed, and an operator is free to make other
+permission is granted for every app currently installed except the apex only ones, and an operator is free to make other
 groups or add apps to this one.
 """
 
@@ -17,6 +17,7 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tethys_portal.settings")
 django.setup()
 
+from apex_apps import APEX_ONLY_APPS  # noqa: E402
 from django.contrib.auth.models import Group  # noqa: E402
 from django_tenants.utils import get_tenant_model, schema_context  # noqa: E402
 from guardian.shortcuts import assign_perm  # noqa: E402
@@ -29,7 +30,7 @@ def ensure(schema):
     """Create the access group in one tenant and grant it every installed app."""
     with schema_context(schema):
         group, created = Group.objects.get_or_create(name=GROUP_NAME)
-        apps = list(TethysApp.objects.all())
+        apps = list(TethysApp.objects.exclude(package__in=APEX_ONLY_APPS))
         for app in apps:
             assign_perm(f"{app.package}:access_app", group, app)
         return created, [a.package for a in apps]
