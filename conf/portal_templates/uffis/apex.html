@@ -177,7 +177,7 @@ and is also handed to the app as JSON, so the viewer can name the selected count
 <dialog id="about" class="apex-about" aria-labelledby="about-title">
   <div class="apex-about-inner">
     <header class="apex-about-head">
-      {% if site_globals.brand_image %}<img src="{% if 'http' in site_globals.brand_image %}{{ site_globals.brand_image }}{% else %}{% static site_globals.brand_image %}{% endif %}" alt="">{% endif %}
+      {% if site_globals.brand_image %}<img src="{% if 'http' in site_globals.brand_image %}{{ site_globals.brand_image }}{% else %}{% static site_globals.brand_image %}{% endif %}" alt="" loading="lazy" decoding="async">{% endif %}
       <h2 id="about-title" tabindex="-1">About UFFIS</h2>
       <button id="about-close" class="apex-close" type="button">Close</button>
     </header>
