@@ -18,14 +18,15 @@ AGENCIES = [
         "seal": "tenants/abms/abms_logo.png",
         "country": "antigua",
     },
-    {
-        "schema": "bms",
-        "short": "BMS",
-        "place": "Barbados",
-        "name": "Barbados Meteorological Services",
-        "seal": "tenants/bms/bms_logo.png",
-        "country": "barbados",
-    },
+    # Paused at Barbados request
+    # {
+    #     "schema": "bms",
+    #     "short": "BMS",
+    #     "place": "Barbados",
+    #     "name": "Barbados Meteorological Services",
+    #     "seal": "tenants/bms/bms_logo.png",
+    #     "country": "barbados",
+    # },
     {
         "schema": "anacm",
         "short": "ANACM",
