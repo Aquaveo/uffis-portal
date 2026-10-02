@@ -52,6 +52,7 @@ settings:
       CONN_MAX_AGE: 0
       DISABLE_SERVER_SIDE_CURSORS: false
   MIDDLEWARE:
+    - paused_tenants.PausedTenantGate
     - public_gate.PublicSchemaGate
   CONTEXT_PROCESSORS:
     - portal_context.tenant_language
