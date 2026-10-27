@@ -436,16 +436,22 @@ PostGIS database.
 `tgf_wmo_plugins` is installed in the builder stage, pinned to a commit, and exposes six
 `intake.drivers` entry points that tethysdash discovers. It ships no `static` directory. That used
 to break provisioning, because tethysdash called `os.listdir` on one without checking; fixed
-upstream in `tethysapp-tethys_dash` #183 and the local workaround is gone. tethysdash is cloned
-from its default branch unpinned, so the fix is present. Pinning tethysdash to a release older than
+upstream in `tethysapp-tethys_dash` #183 and the local workaround is gone. The pinned tethysdash
+includes the fix. Pinning tethysdash to a release older than
 that fix brings the `FileNotFoundError` back.
 
 tethysdash is pinned by commit in `TETHYSDASH_REF`, not cloned from a moving branch. A
 `git clone --depth 1` of a branch is not cache safe: Docker cannot tell the remote moved, so the
 layer is reused forever and the same portal commit can build two different images. That bit us
 once, the CI build reused a cached clone from before the upstream fix and provisioning failed with
-`FileNotFoundError` after the local workaround had been removed. Bump the pin deliberately to take
-a tethysdash change.
+`FileNotFoundError` after the local workaround had been removed.
+
+Bump the pins with the `bump pins` workflow rather than by hand. It runs every Monday and from the
+Actions tab, where each repository takes a branch, tag or full sha (default `main`). It resolves
+each one to a commit, rewrites the `ARG …_REF` lines and opens or updates a single `bump-pins` PR
+with a compare link per repository. After merge, `build and push to ECR` builds the image; deploy
+it with `tofu deploy`. Set the `PINS_TOKEN` secret to a token with contents and pull request write
+access so `lint` runs on that PR; with the default token it does not.
 
 The CI build uses the GitHub Actions layer cache, `cache-from` and `cache-to: type=gha`, so a
 cached layer survives across runs and across runners. When rebuilding locally to pick up a
