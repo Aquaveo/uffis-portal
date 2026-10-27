@@ -1,0 +1,90 @@
+name: bump pins
+
+on:
+  workflow_dispatch:
+    inputs:
+      tethysdash_ref:
+        description: "tethysapp-tethys_dash branch, tag or full sha"
+        default: main
+        type: string
+      wmo_plugins_ref:
+        description: "tgf_wmo_plugins branch, tag or full sha"
+        default: main
+        type: string
+      uffis_forecasts_ref:
+        description: "tethysapp-uffis_forecasts branch, tag or full sha"
+        default: main
+        type: string
+  schedule:
+    - cron: "0 13 * * 1" # Mondays 13:00 UTC
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: bump-pins
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve refs and rewrite the Dockerfile
+        id: bump
+        env:
+          TETHYSDASH: ${{ inputs.tethysdash_ref || 'main' }}
+          WMO_PLUGINS: ${{ inputs.wmo_plugins_ref || 'main' }}
+          UFFIS_FORECASTS: ${{ inputs.uffis_forecasts_ref || 'main' }}
+        run: |
+          set -euo pipefail
+          resolve() {
+            if [[ $2 =~ ^[0-9a-f]{40}$ ]]; then echo "$2"; return; fi
+            # an annotated tag's ^{} line is the commit; prefer it over the tag object
+            sha=$(git ls-remote "https://github.com/$1" "refs/heads/$2" "refs/tags/$2" "refs/tags/$2^{}" \
+              | awk '{s[NR]=$1} /\^\{\}$/{p=$1} END{print p ? p : s[1]}')
+            [ -n "$sha" ] || { echo "::error::$1 has no branch or tag $2" >&2; exit 1; }
+            echo "$sha"
+          }
+          body=$(mktemp)
+          echo "Bumps the pinned commits in the Dockerfile." > "$body"
+          echo >> "$body"
+          while read -r arg repo ref; do
+            old=$(sed -n "s/^ARG ${arg}=//p" Dockerfile)
+            new=$(resolve "$repo" "$ref")
+            if [ "$old" = "$new" ]; then
+              echo "- \`$arg\`: unchanged (${old::12})" >> "$body"
+            else
+              sed -i "s/^ARG ${arg}=.*/ARG ${arg}=${new}/" Dockerfile
+              echo "- \`$arg\` ($ref): [${old::12} → ${new::12}](https://github.com/$repo/compare/$old...$new)" >> "$body"
+            fi
+          done <<EOF
+          TETHYSDASH_REF tethysplatform/tethysapp-tethys_dash $TETHYSDASH
+          WMO_PLUGINS_REF Aquaveo/tgf_wmo_plugins $WMO_PLUGINS
+          UFFIS_FORECASTS_REF Aquaveo/tethysapp-uffis_forecasts $UFFIS_FORECASTS
+          EOF
+          echo >> "$body"
+          echo "After merge, \`build and push to ECR\` builds \`uffis-<sha>\`; deploy it with \`tofu deploy\` (plan, then apply)." >> "$body"
+          echo "body=$body" >> "$GITHUB_OUTPUT"
+          if git diff --quiet; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          cat "$body" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update the bump PR
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          # A PAT or app token lets lint run on the PR; GITHUB_TOKEN-created PRs trigger no workflows
+          GH_TOKEN: ${{ secrets.PINS_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git switch -c bump-pins
+          git commit -am "Bump tethysdash and plugin pins"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" bump-pins
+          if gh pr view bump-pins --json state -q .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit bump-pins --body-file "${{ steps.bump.outputs.body }}"
+          else
+            gh pr create --head bump-pins --base main --title "Bump tethysdash and plugin pins" \
+              --body-file "${{ steps.bump.outputs.body }}"
+          fi
