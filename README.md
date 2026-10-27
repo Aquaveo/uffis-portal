@@ -556,6 +556,47 @@ Any number of administrators can approve, and the list maintains itself: the not
 every user in that tenant's schema with `is_staff` and an address. An approver does not need to be a
 superuser, only staff with permission over users and groups.
 
+Administrators are per tenant, because `django.contrib.auth` is a tenant app and `auth_user` is a
+per schema table. An account on one tenant does not exist on another, and `approvers()` only ever
+looks at the schema serving the request, so someone who should hear about every tenant's requests
+needs an account in every schema.
+
+The `grant admins` workflow does that. It reads the address list from the `PORTAL_ADMINS` repository
+secret, or from an input when granting someone ad hoc, and runs `conf/grant_admins.py` against
+every tenant schema. The public schema is left out, because the apex allows no accounts:
+
+```bash
+gh workflow run grant-admins.yml --repo Aquaveo/uffis-portal
+gh workflow run grant-admins.yml --repo Aquaveo/uffis-portal -f admins=someone@example.org
+gh workflow run grant-admins.yml --repo Aquaveo/uffis-portal \
+  -f admins=director@agency.example.org -f tenants=abms
+```
+
+`tenants` names the schemas to grant in and defaults to all of them. It is how an agency's own
+administrator is given their portal and nobody else's, which is the shape this grows into as each
+agency takes over approving its own users. A schema name that does not exist is fatal and the error
+lists the ones that do, because a typo would otherwise report a clean run that granted nobody.
+
+No address is committed. The list lives in a repository secret, so who holds an administrator
+account is never recorded in this repository or its history. The run log is public, so the
+workflow masks every address and username before any step prints one. Change the secret with
+`gh secret set PORTAL_ADMINS` and run the workflow again.
+
+The workflow ships the script to a one-off task rather than calling a script baked into the image,
+so it needs no rebuild and no deploy, and it picks up edits to `conf/grant_admins.py` on the next
+run. ECS caps the override payload at 8192 characters and the script travels inside it, so the
+workflow fails with that explanation rather than an opaque API error if the script ever outgrows it.
+
+It is not a provision hook, so a tenant added later does not get these accounts automatically. Run
+the workflow again after adding one. It is safe to re-run: an existing account keeps its password
+and only a missing grant is added.
+
+The script never prints or stores a password. It sets a random one on creation only, and each
+administrator sets their own through Forgot password, once per tenant host. The random password is
+not a formality: `PasswordResetForm.get_users` filters on `has_usable_password`, so an account
+created with `set_unusable_password` would receive no reset mail at all and could never be signed
+into. A username already held by a different address is reported and left alone rather than reused.
+
 Grant access per tenant, in that tenant's admin under Authentication and Authorization, Groups.
 Creating or editing a group there offers the installed apps; ticking one assigns
 `<package>:access_app` to the group, and members of the group inherit it. Superusers bypass the
