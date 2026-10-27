@@ -50,7 +50,7 @@ def tenants():
     A named schema that does not exist is fatal rather than skipped. A typo would otherwise report a
     clean run that granted nobody, which is the failure that looks most like success.
     """
-    known = ["public"] + sorted(
+    known = sorted(
         t.schema_name for t in get_tenant_model().objects.exclude(schema_name="public")
     )
     asked = [name.strip() for name in os.environ.get("PORTAL_TENANTS", "").split(",") if name.strip()]

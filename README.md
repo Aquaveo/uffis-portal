@@ -562,7 +562,7 @@ needs an account in every schema.
 
 The `grant admins` workflow does that. It reads the address list from the `PORTAL_ADMINS` repository
 secret, or from an input when granting someone ad hoc, and runs `conf/grant_admins.py` against
-every schema:
+every tenant schema. The public schema is left out, because the apex allows no accounts:
 
 ```bash
 gh workflow run grant-admins.yml --repo Aquaveo/uffis-portal
