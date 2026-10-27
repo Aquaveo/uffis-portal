@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       admins:
-        description: "Comma separated addresses. Leave empty to use the PORTAL_ADMINS repository variable."
+        description: "Comma separated addresses. Leave empty to use the PORTAL_ADMINS repository secret."
         required: false
         default: ""
         type: string
@@ -25,15 +25,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The run log is public. A secret is masked on its own but an input is not, and a step prints
+      # its env before it runs, so mask every address and username before any step can print one.
+      # The input is read from the event file rather than env so this step prints nothing itself.
+      - name: Mask addresses
+        env:
+          SECRET_ADMINS: ${{ secrets.PORTAL_ADMINS }}
+        run: |
+          set -euo pipefail
+          for a in $(jq -r '.inputs.admins // ""' "$GITHUB_EVENT_PATH" | tr ',' ' ') $(tr ',' ' ' <<< "$SECRET_ADMINS"); do
+            echo "::add-mask::$a"
+            echo "::add-mask::${a%%@*}"
+          done
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
+          mask-aws-account-id: true
 
       - name: Grant administrators on every tenant
         env:
-          PORTAL_ADMINS: ${{ inputs.admins != '' && inputs.admins || vars.PORTAL_ADMINS }}
+          PORTAL_ADMINS: ${{ inputs.admins != '' && inputs.admins || secrets.PORTAL_ADMINS }}
           PORTAL_TENANTS: ${{ inputs.tenants }}
           CLUSTER: uffis-portal-cluster
           SERVICE: uffis-portal-web
@@ -44,7 +58,7 @@ jobs:
           set -euo pipefail
 
           [ -n "${PORTAL_ADMINS}" ] || {
-            echo "::error::no addresses supplied; set the PORTAL_ADMINS repository variable or pass the admins input"
+            echo "::error::no addresses supplied; set the PORTAL_ADMINS repository secret or pass the admins input"
             exit 1
           }
           echo "granting $(echo "${PORTAL_ADMINS}" | tr ',' '\n' | grep -c .) administrators on ${PORTAL_TENANTS:-every tenant}"
@@ -57,6 +71,7 @@ jobs:
           SG=$(echo "$NET" | jq -r '.securityGroups | join(",")')
           PUBIP=$(echo "$NET" | jq -r '.assignPublicIp')
           [ -n "$SUBNETS" ] && [ -n "$SG" ] || { echo "::error::could not read the service network configuration"; exit 1; }
+          for id in ${SUBNETS//,/ } ${SG//,/ }; do echo "::add-mask::$id"; done
 
           # The script is shipped to the task at run time, so this needs no image rebuild and picks
           # up edits to conf/grant_admins.py on the next run.

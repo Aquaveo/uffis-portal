@@ -561,7 +561,7 @@ looks at the schema serving the request, so someone who should hear about every 
 needs an account in every schema.
 
 The `grant admins` workflow does that. It reads the address list from the `PORTAL_ADMINS` repository
-variable, or from an input when granting someone ad hoc, and runs `conf/grant_admins.py` against
+secret, or from an input when granting someone ad hoc, and runs `conf/grant_admins.py` against
 every schema:
 
 ```bash
@@ -576,9 +576,10 @@ administrator is given their portal and nobody else's, which is the shape this g
 agency takes over approving its own users. A schema name that does not exist is fatal and the error
 lists the ones that do, because a typo would otherwise report a clean run that granted nobody.
 
-No address is committed. The list lives in a repository variable, so who holds an administrator
-account is never recorded in this repository or its history. Change the variable and run the
-workflow again.
+No address is committed. The list lives in a repository secret, so who holds an administrator
+account is never recorded in this repository or its history. The run log is public, so the
+workflow masks every address and username before any step prints one. Change the secret with
+`gh secret set PORTAL_ADMINS` and run the workflow again.
 
 The workflow ships the script to a one-off task rather than calling a script baked into the image,
 so it needs no rebuild and no deploy, and it picks up edits to `conf/grant_admins.py` on the next
