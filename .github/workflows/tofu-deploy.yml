@@ -54,6 +54,9 @@ jobs:
           for v in STATE_BUCKET ACCOUNT_ID VPC_ID SUBNET_IDS ACM_ARN DB_HOST PORTAL_DOMAIN SES_SMTP_USER IMAGE_TAG; do
             [ -n "${!v}" ] || { echo "::error::repository variable $v is not set"; exit 1; }
           done
+          # Keep account specific identifiers out of the run log; plan and apply print them otherwise
+          for v in ACCOUNT_ID VPC_ID ACM_ARN DB_HOST SES_SMTP_USER; do echo "::add-mask::${!v}"; done
+          for s in $(grep -oE 'subnet-[0-9a-f]+' <<< "${SUBNET_IDS}"); do echo "::add-mask::$s"; done
           cat > tofu/backend.hcl <<EOF
           bucket = "${STATE_BUCKET}"
           region = "${{ vars.AWS_REGION }}"
@@ -89,6 +92,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
+          mask-aws-account-id: true
 
       - name: tofu init
         working-directory: iac/tofu
@@ -115,6 +119,7 @@ jobs:
           CNAME=$(tofu output -raw provision_container_name)
           SG=$(tofu output -raw web_security_group)
           SUBNETS=$(tofu output -json service_subnets | jq -r 'join(",")')
+          echo "::add-mask::$SG"
           PUB=$(tofu output -raw assign_public_ip)
           if [ "$PUB" = "true" ]; then PUBIP=ENABLED; else PUBIP=DISABLED; fi
           NETCFG="awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SG],assignPublicIp=$PUBIP}"
