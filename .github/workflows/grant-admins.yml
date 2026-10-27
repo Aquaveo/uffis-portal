@@ -1,0 +1,95 @@
+name: grant admins
+
+on:
+  workflow_dispatch:
+    inputs:
+      admins:
+        description: "Comma separated addresses. Leave empty to use the PORTAL_ADMINS repository variable."
+        required: false
+        default: ""
+        type: string
+      tenants:
+        description: "Comma separated schema names, for example abms,uhm. Leave empty for every tenant."
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  grant:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Grant administrators on every tenant
+        env:
+          PORTAL_ADMINS: ${{ inputs.admins != '' && inputs.admins || vars.PORTAL_ADMINS }}
+          PORTAL_TENANTS: ${{ inputs.tenants }}
+          CLUSTER: uffis-portal-cluster
+          SERVICE: uffis-portal-web
+          TASK_DEF: uffis-portal-provision
+          CONTAINER: provision
+          LOG_GROUP: /ecs/uffis-portal
+        run: |
+          set -euo pipefail
+
+          [ -n "${PORTAL_ADMINS}" ] || {
+            echo "::error::no addresses supplied; set the PORTAL_ADMINS repository variable or pass the admins input"
+            exit 1
+          }
+          echo "granting $(echo "${PORTAL_ADMINS}" | tr ',' '\n' | grep -c .) administrators on ${PORTAL_TENANTS:-every tenant}"
+
+          # The subnets and security group are read from the running service so no account specific
+          # identifier is ever committed to this repository.
+          NET=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
+                  --query 'services[0].networkConfiguration.awsvpcConfiguration' --output json)
+          SUBNETS=$(echo "$NET" | jq -r '.subnets | join(",")')
+          SG=$(echo "$NET" | jq -r '.securityGroups | join(",")')
+          PUBIP=$(echo "$NET" | jq -r '.assignPublicIp')
+          [ -n "$SUBNETS" ] && [ -n "$SG" ] || { echo "::error::could not read the service network configuration"; exit 1; }
+
+          # The script is shipped to the task at run time, so this needs no image rebuild and picks
+          # up edits to conf/grant_admins.py on the next run.
+          jq -n --rawfile code conf/grant_admins.py --arg admins "$PORTAL_ADMINS" \
+                --arg tenants "$PORTAL_TENANTS" --arg name "$CONTAINER" \
+            '{containerOverrides:[{name:$name,command:["python","-c",$code],
+              environment:[{name:"PORTAL_ADMINS",value:$admins},
+                           {name:"PORTAL_TENANTS",value:$tenants}]}]}' > overrides.json
+
+          # ECS caps the whole override payload at 8192 characters, and the script travels inside it.
+          SIZE=$(wc -c < overrides.json)
+          echo "override payload: ${SIZE} bytes"
+          [ "$SIZE" -lt 8192 ] || {
+            echo "::error::override payload is ${SIZE} bytes and ECS rejects anything over 8192; conf/grant_admins.py has outgrown this transport and belongs in the image instead"
+            exit 1
+          }
+
+          TASK=$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$TASK_DEF" \
+                   --launch-type FARGATE --started-by "ci-grant-admins" \
+                   --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SG],assignPublicIp=$PUBIP}" \
+                   --overrides file://overrides.json \
+                   --query 'tasks[0].taskArn' --output text)
+          [ -n "$TASK" ] && [ "$TASK" != "None" ] || { echo "::error::run-task returned no task ARN"; exit 1; }
+          echo "task: $TASK"
+
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
+
+          echo "== task output =="
+          aws logs get-log-events --log-group-name "$LOG_GROUP" \
+            --log-stream-name "provision/${CONTAINER}/${TASK##*/}" \
+            --query 'events[].message' --output text || echo "(log stream not readable)"
+
+          CODE=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" \
+                   --query "tasks[0].containers[?name=='${CONTAINER}'].exitCode | [0]" --output text)
+          echo "exit code: $CODE"
+          [ "$CODE" = "0" ] || { echo "::error::grant task failed (exit ${CODE})"; exit 1; }
