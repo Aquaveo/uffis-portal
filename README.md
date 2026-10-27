@@ -93,8 +93,9 @@ sed "s/__STATE_BUCKET__/<bucket>/" tofu/backend.hcl.example > tofu/backend.hcl
 ```
 
 Set these repository variables before the first deploy (Settings, Secrets and variables, Actions):
-`AWS_REGION`, `ECR_REPOSITORY`, `TOFU_STATE_BUCKET`, `AWS_ACCOUNT_ID`, `VPC_ID`, `SUBNET_IDS`,
-`ACM_CERTIFICATE_ARN`, `DB_HOST`, `PORTAL_DOMAIN`. `SUBNET_IDS` is a JSON array, for example
+`AWS_REGION`, `ECR_REPOSITORY`, `TOFU_STATE_BUCKET`, `PORTAL_DOMAIN`. Set the account specific
+values as repository secrets instead, so the public run logs mask them: `AWS_ACCOUNT_ID`, `VPC_ID`,
+`SUBNET_IDS`, `ACM_CERTIFICATE_ARN`, `DB_HOST`, `SES_SMTP_USER`. `SUBNET_IDS` is a JSON array, for example
 `["subnet-aaa", "subnet-bbb"]`.
 
 The image tag is a workflow input rather than a committed value, so deploying a new build no longer
