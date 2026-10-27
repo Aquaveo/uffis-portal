@@ -560,6 +560,20 @@ Creating or editing a group there offers the installed apps; ticking one assigns
 `<package>:access_app` to the group, and members of the group inherit it. Superusers bypass the
 check, because guardian short circuits them.
 
+A user created by hand in the admin reaches no app until someone adds it to `Portal Access`. Only
+approval assigns that group, and a user made directly in the admin never passes through approval, so
+it arrives with no group and no grant.
+
+The User page cannot fix this, which is the part that wastes time. `user_can_access_app` asks
+`user.has_perm("<package>:access_app", app)` with the app itself as the second argument, so the
+grant has to be an object level permission on that app row. Ticking a permission on the User page
+assigns a model level permission, which never satisfies that check and fails silently. Tethys only
+ever assigns the object level permission to a group, never to a user, so the group is the only route.
+
+Add the user to `Portal Access` under its Groups field and it works. Check Active while there: an
+account made through sign up stays inactive until approved and cannot log in at all. Testing with an
+administrator proves nothing here, because superusers bypass the check.
+
 Both settings are portal wide, so they apply to every tenant or none, but app access grants are per
 tenant because groups live in the tenant schema.
 
