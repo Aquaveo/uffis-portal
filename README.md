@@ -98,14 +98,23 @@ aws ecs run-task --cluster "$(tofu -chdir=$IAC output -raw ecs_cluster)" \
 
 Check the task log, then run `tofu deploy` (apps, settings, access group) and `grant admins`.
 
+## Deploying
+
+Any reviewer of the `production` environment (Settings, Environments) can deploy; no AWS
+credentials are needed. A merge to `main` builds the image `uffis-<short sha>`, and a `v*` tag also
+builds `uffis-<tag>`. Open **Actions, tofu deploy, Run workflow** on `main`, enter that `image_tag`
+and choose `plan`. The run waits at **Review deployments**: approve `production` and read the plan.
+If it shows what you expect, run it again with `apply` and approve; the workflow runs the provision
+task and rolls the web service. Only `main` can deploy, every run needs one reviewer's approval,
+and you may approve your own. To roll back, deploy an earlier `image_tag`.
+
 ## Day to day
 
-- **Deploy:** a merge to `main` builds `uffis-<short sha>`. Run `tofu deploy` with that
-  `image_tag`, `plan` then `apply`, approving each run for `production`.
 - **Pins:** tethysdash, `tgf_wmo_plugins` and the UFFIS Forecasts app are pinned by commit in the
   Dockerfile (a cloned branch is not cache safe). The `bump pins` workflow resolves new commits
-  every Monday or on demand and opens one PR; set `PINS_TOKEN` if `lint` should run on it. Locally,
-  rebuild with `docker build --no-cache-filter builder,runtime`.
+  every Monday or on demand and opens one PR: review its compare links, merge, and deploy the new
+  image. Set `PINS_TOKEN` if `lint` should run on it. Locally, rebuild with
+  `docker build --no-cache-filter builder,runtime`.
 - **Base image and module:** bump `BASE_BUILDER`/`BASE_TAG` in the Dockerfile and the `iac_ref`
   default in `tofu-deploy.yml` deliberately; both are pinned so a plan cannot drift before apply.
 - **Secrets:** update the GitHub secret, then run `sync secrets`.
