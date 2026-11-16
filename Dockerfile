@@ -17,7 +17,7 @@ ARG TETHYS_DEBUG_MODE="false"
 ENV DEV_REACT_CONFIG="${TETHYS_APPS_ROOT}/tethysdash/reactapp/config/development.env" \
     PROD_REACT_CONFIG="${TETHYS_APPS_ROOT}/tethysdash/reactapp/config/production.env"
 
-ARG TETHYSDASH_REF=148f62d5d971a44790afbcafb160dcc61bf05ddd
+ARG TETHYSDASH_REF=46df84267a0fed0ee837d5da6369c1f47188e10c
 RUN git clone https://github.com/tethysplatform/tethysapp-tethys_dash.git \
       "${TETHYS_APPS_ROOT}/tethysdash" \
   && git -C "${TETHYS_APPS_ROOT}/tethysdash" checkout --detach "${TETHYSDASH_REF}" \
